@@ -364,7 +364,41 @@ class Database {
 
 // 修改 Character 类以支持数据持久化
 class Character {
-    static characters = new Map(); // 存储不同用户的角色
+    static characters = new Map();
+    static availableEmojis = [
+        // 基础表情（不同肤色）
+        '👶', '👶🏻', '👶🏼', '👶🏽', '👶🏾', '👶🏿',
+        '👧', '👧🏻', '👧🏼', '👧🏽', '👧🏾', '👧🏿',
+        '👦', '👦🏻', '👦🏼', '👦🏽', '👦🏾', '👦🏿',
+        '👨', '👨🏻', '👨🏼', '👨🏽', '👨🏾', '👨🏿',
+        '👩', '👩🏻', '👩🏼', '👩🏽', '👩🏾', '👩🏿',
+        
+        // 有趣的表情
+        '🥳', '🤪', '🤓', '🧐', '🤠', '🥸',
+        '😎', '🤡', '👻', '🤖', '👾', '👽',
+        
+        // 职业和角色
+        '🧙‍♂️', '🧙‍♀️', '🧝‍♂️', '🧝‍♀️', '🦹‍♂️', '🦹‍♀️',
+        '🥷', '🥷🏻', '🥷🏼', '🥷🏽', '🥷🏾', '🥷🏿',
+        '👨‍🎤', '👩‍🎤', '👨‍🎨', '👩‍🎨',
+        
+        // 动物
+        '🐶', '🐱', '🐰', '🦊', '🐼', '🐨',
+        '🦁', '🐯', '🐸', '🦄', '🐲', '🐉',
+        
+        // 节日相关
+        '🎅', '🎅🏻', '🎅🏼', '🎅🏽', '🎅🏾', '🎅🏿',
+        '🤶', '🤶🏻', '🤶🏼', '🤶🏽', '🤶🏾', '🤶🏿',
+        '🦌', '⛄', '🎄',
+        
+        // 表情和情绪
+        '😊', '🥰', '😇', '🤩', '🥳', '🤪',
+        '🤓', '😎', '🥸', '🤯', '🤠', '😈',
+        
+        // 幻想角色
+        '🧚‍♂️', '🧚‍♀️', '🧛‍♂️', '🧛‍♀️', '🧜‍♂️', '🧜‍♀️',
+        '🧞‍♂️', '🧞‍♀️', '🧟‍♂️', '🧟‍♀️', '👼', '👻'
+    ];
 
     static create(message, senderId) {
         // 检查是否已经存在这个发送者的角色
@@ -385,15 +419,14 @@ class Character {
             throw new Error('Message is required');
         }
 
-        // 基本属性初始化
         this.senderId = senderId;
         this.messages = [message];
         this.element = null;
         this.bubble = null;
-
-        // 创建并初始化元素
-        this.initializeElement();
+        this.position = null;
         
+        // 初始化元素
+        this.initializeElement();
         // 显示初始消息
         this.showMessage(message);
     }
@@ -410,21 +443,151 @@ class Character {
         const character = document.createElement('div');
         character.classList.add('character');
         character.setAttribute('data-sender-id', this.senderId);
-        
-        // 为不同用户设置不同的位置
-        const randomX = 100 + Math.random() * (window.innerWidth - 300);
-        const randomY = window.innerHeight * 0.5 + Math.random() * (window.innerHeight * 0.3);
-        
         character.style.position = 'fixed';
-        character.style.left = `${randomX}px`;
-        character.style.top = `${randomY}px`;
         
+        // 加载保存的emoji或使用随机emoji
+        const savedEmoji = localStorage.getItem(`character_emoji_${this.senderId}`);
+        const randomEmoji = Character.availableEmojis[Math.floor(Math.random() * Character.availableEmojis.length)];
+        character.textContent = savedEmoji || randomEmoji;
+        
+        // 如果是新角色，保存随机选择的emoji
+        if (!savedEmoji) {
+            localStorage.setItem(`character_emoji_${this.senderId}`, character.textContent);
+        }
+
         // 添加事件监听器
-        character.addEventListener('click', () => this.showHistory());
+        character.addEventListener('click', (e) => {
+            if (this.senderId === sessionUserId) {
+                if (e.button === 2) {
+                    e.preventDefault();
+                    this.showEmojiSelector(e);
+                } else {
+                    this.showHistory();
+                }
+            } else {
+                this.showHistory();
+            }
+        });
+        
+        // 添加右键菜单监听
+        character.addEventListener('contextmenu', (e) => {
+            if (this.senderId === sessionUserId) {
+                e.preventDefault();
+                this.showEmojiSelector(e);
+            }
+        });
+
         this.addDragability(character);
         
         document.querySelector('.character-container').appendChild(character);
         this.element = character;
+
+        // 加载保存的位置或设置初始位置
+        if (!this.loadPosition()) {
+            this.setInitialPosition();
+        }
+    }
+
+    setInitialPosition() {
+        // 获取圣诞树元素的位置
+        const tree = document.querySelector('.christmas-tree');
+        const treeRect = tree.getBoundingClientRect();
+        
+        // 获取消息输入框的位置
+        const messageInput = document.querySelector('.message-input-container');
+        const inputRect = messageInput.getBoundingClientRect();
+        
+        // 设置初始位置范围（在界面下方区域）
+        const minX = 50;
+        const maxX = window.innerWidth - 100;
+        const minY = window.innerHeight * 0.6; // 从界面60%高度开始
+        const maxY = Math.min(window.innerHeight * 0.8, inputRect.top - 100); // 到界面80%高度或输入框上方
+        
+        // 生成随机位置
+        const randomX = minX + Math.random() * (maxX - minX);
+        const randomY = minY + Math.random() * (maxY - minY);
+        
+        // 设置位置
+        this.element.style.left = `${randomX}px`;
+        this.element.style.top = `${randomY}px`;
+        
+        // 保存位置
+        this.savePosition();
+    }
+
+    savePosition() {
+        if (!this.element) return;
+        
+        const position = {
+            left: this.element.style.left,
+            top: this.element.style.top
+        };
+        
+        try {
+            localStorage.setItem(`character_position_${this.senderId}`, JSON.stringify(position));
+        } catch (error) {
+            console.error('保存位置失败:', error);
+        }
+    }
+
+    loadPosition() {
+        try {
+            const savedPosition = localStorage.getItem(`character_position_${this.senderId}`);
+            if (savedPosition) {
+                const position = JSON.parse(savedPosition);
+                this.element.style.left = position.left;
+                this.element.style.top = position.top;
+                return true;
+            }
+        } catch (error) {
+            console.error('加载位置失败:', error);
+        }
+        return false;
+    }
+
+    addDragability(element) {
+        let isDragging = false;
+        let startX, startY;
+        let startLeft, startTop;
+
+        element.addEventListener('mousedown', (e) => {
+            if (e.button !== 0) return;
+            isDragging = true;
+            startX = e.clientX;
+            startY = e.clientY;
+            const rect = element.getBoundingClientRect();
+            startLeft = rect.left;
+            startTop = rect.top;
+            element.style.cursor = 'grabbing';
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            
+            const dx = e.clientX - startX;
+            const dy = e.clientY - startY;
+            
+            let newLeft = startLeft + dx;
+            let newTop = startTop + dy;
+            
+            // 限制在窗口内
+            newLeft = Math.max(0, Math.min(window.innerWidth - 50, newLeft));
+            newTop = Math.max(0, Math.min(window.innerHeight - 50, newTop));
+            
+            element.style.left = `${newLeft}px`;
+            element.style.top = `${newTop}px`;
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (isDragging) {
+                isDragging = false;
+                element.style.cursor = 'grab';
+                // 保存新位置
+                this.savePosition();
+            }
+        });
+
+        element.addEventListener('dragstart', (e) => e.preventDefault());
     }
 
     updateMessage(text) {
@@ -442,6 +605,8 @@ class Character {
         this.bubble = document.createElement('div');
         this.bubble.classList.add('message-bubble');
         this.bubble.textContent = text;
+        
+        // 将气泡添加到角色元素中
         this.element.appendChild(this.bubble);
 
         // 2秒后隐藏气泡
@@ -491,64 +656,6 @@ class Character {
         }
     }
 
-    addDragability(element) {
-        let isDragging = false;
-        let startX, startY;
-        let startLeft, startTop;
-        const messageInput = document.querySelector('.message-input-container');
-
-        element.addEventListener('mousedown', (e) => {
-            if (e.button !== 0) return; // 只响应左键点击
-            isDragging = true;
-            startX = e.clientX;
-            startY = e.clientY;
-            const rect = element.getBoundingClientRect();
-            startLeft = rect.left;
-            startTop = rect.top;
-            element.style.cursor = 'grabbing';
-        });
-
-        document.addEventListener('mousemove', (e) => {
-            if (!isDragging) return;
-            
-            const dx = e.clientX - startX;
-            const dy = e.clientY - startY;
-            
-            let newLeft = startLeft + dx;
-            let newTop = startTop + dy;
-            
-            // 限制拖动范围
-            const elementRect = element.getBoundingClientRect();
-            const messageInputRect = messageInput.getBoundingClientRect();
-            
-            // 防止与消息输入框重叠
-            if (!(newLeft + elementRect.width > messageInputRect.left &&
-                  newLeft < messageInputRect.right &&
-                  newTop + elementRect.height > messageInputRect.top &&
-                  newTop < messageInputRect.bottom)) {
-                
-                // 限制在窗口内
-                newLeft = Math.max(0, Math.min(window.innerWidth - elementRect.width, newLeft));
-                newTop = Math.max(0, Math.min(window.innerHeight - elementRect.height, newTop));
-                
-                element.style.left = `${newLeft}px`;
-                element.style.top = `${newTop}px`;
-                element.style.transform = 'none';
-            }
-        });
-
-        document.addEventListener('mouseup', () => {
-            if (isDragging) {
-                isDragging = false;
-                element.style.cursor = 'grab';
-                this.saveToDatabase();
-            }
-        });
-
-        // 防止拖动时选中文本
-        element.addEventListener('dragstart', (e) => e.preventDefault());
-    }
-
     showHistory() {
         const modal = document.querySelector('.history-modal');
         const historyContainer = modal.querySelector('.message-history');
@@ -567,38 +674,173 @@ class Character {
             messageText.textContent = msg;
             item.appendChild(messageText);
             
-            // 添加删除按钮
-            const deleteBtn = document.createElement('button');
-            deleteBtn.classList.add('delete-message');
-            deleteBtn.innerHTML = '×';
-            deleteBtn.title = '删除此消息';
+            // 只有当前用户可以删除自己的消息
+            if (this.senderId === sessionUserId) {
+                const deleteBtn = document.createElement('button');
+                deleteBtn.classList.add('delete-message');
+                deleteBtn.innerHTML = '×';
+                deleteBtn.title = '删除此消息';
+                
+                // 删除单条消息
+                deleteBtn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    if (confirm('确定要删除这条消息吗？')) {
+                        try {
+                            // 从全局获取 Firebase 函数
+                            const { ref, get, remove } = await import('https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js');
+                            
+                            // 查找并删除消息
+                            const messagesRef = ref(window.database, 'messages');
+                            const snapshot = await get(messagesRef);
+                            
+                            if (snapshot.exists()) {
+                                const messages = snapshot.val();
+                                for (const [key, message] of Object.entries(messages)) {
+                                    if (message.senderId === this.senderId && message.text === msg) {
+                                        // 删除消息
+                                        await remove(ref(window.database, `messages/${key}`));
+                                        
+                                        // 更新本地状态
+                                        this.messages.splice(index, 1);
+                                        item.style.animation = 'itemDisappear 0.3s ease-out forwards';
+                                        
+                                        setTimeout(() => {
+                                            item.remove();
+                                            if (this.messages.length === 0) {
+                                                if (this.element && this.element.parentNode) {
+                                                    this.element.remove();
+                                                }
+                                                Character.characters.delete(this.senderId);
+                                                modal.style.display = 'none';
+                                            }
+                                        }, 300);
+                                        
+                                        return; // 删除成功后退出
+                                    }
+                                }
+                            }
+                            throw new Error('找不到要删除的消息');
+                        } catch (error) {
+                            console.error('删除失败:', error);
+                            alert('删除失败，请重试');
+                        }
+                    }
+                });
+                
+                item.appendChild(deleteBtn);
+            }
             
-            // 删除单条消息
-            deleteBtn.addEventListener('click', async (e) => {
-                e.stopPropagation();
-                if (confirm('确定要删除这条消息吗？')) {
-                    this.messages.splice(index, 1);
-                    await this.saveToDatabase();
-                    item.style.animation = 'itemDisappear 0.3s ease-out forwards';
-                    setTimeout(() => item.remove(), 300);
-                }
-            });
-            
-            item.appendChild(deleteBtn);
             historyContainer.appendChild(item);
         });
         
-        // 清空所有消息
-        clearAllBtn.onclick = async () => {
-            if (confirm('确定要清空所有消息记录吗？此操作不可恢复！')) {
-                this.messages = [];
-                await this.saveToDatabase();
-                historyContainer.innerHTML = '';
-                modal.style.display = 'none';
-            }
-        };
+        // 清空按钮只对当前用户的消息可见
+        if (this.senderId === sessionUserId) {
+            clearAllBtn.style.display = 'block';
+            clearAllBtn.onclick = async () => {
+                if (confirm('确定要清空所有消息记录吗？此操作不可恢复！')) {
+                    try {
+                        // 从全局获取 Firebase 函数
+                        const { ref, get, remove } = await import('https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js');
+                        
+                        const messagesRef = ref(window.database, 'messages');
+                        const snapshot = await get(messagesRef);
+                        
+                        if (snapshot.exists()) {
+                            const messages = snapshot.val();
+                            const deletePromises = [];
+                            
+                            for (const [key, message] of Object.entries(messages)) {
+                                if (message.senderId === this.senderId) {
+                                    deletePromises.push(remove(ref(window.database, `messages/${key}`)));
+                                }
+                            }
+                            
+                            if (deletePromises.length > 0) {
+                                await Promise.all(deletePromises);
+                                
+                                // 更新本地状态
+                                this.messages = [];
+                                historyContainer.innerHTML = '';
+                                modal.style.display = 'none';
+                                
+                                // 移除角色显示
+                                if (this.element && this.element.parentNode) {
+                                    this.element.remove();
+                                }
+                                Character.characters.delete(this.senderId);
+                            } else {
+                                throw new Error('没有找到可删除的消息');
+                            }
+                        }
+                    } catch (error) {
+                        console.error('清空失败:', error);
+                        alert('清空失败，请重试');
+                    }
+                }
+            };
+        } else {
+            clearAllBtn.style.display = 'none';
+        }
         
         modal.style.display = 'flex';
+    }
+
+    showEmojiSelector(event) {
+        // 移除现有的选择器
+        const existingSelector = document.querySelector('.emoji-selector');
+        if (existingSelector) {
+            existingSelector.remove();
+        }
+
+        // 创建emoji选择器
+        const selector = document.createElement('div');
+        selector.classList.add('emoji-selector');
+        
+        // 添加所有可用emoji
+        Character.availableEmojis.forEach(emoji => {
+            const emojiOption = document.createElement('span');
+            emojiOption.textContent = emoji;
+            emojiOption.addEventListener('click', () => {
+                this.setEmoji(emoji);
+                selector.remove();
+            });
+            selector.appendChild(emojiOption);
+        });
+
+        // 设置选择器位置
+        selector.style.position = 'fixed';
+        selector.style.left = `${event.clientX}px`;
+        selector.style.top = `${event.clientY}px`;
+
+        // 添加到页面
+        document.body.appendChild(selector);
+
+        // 点击其他地方关闭选择器
+        const closeSelector = (e) => {
+            if (!selector.contains(e.target)) {
+                selector.remove();
+                document.removeEventListener('click', closeSelector);
+            }
+        };
+        setTimeout(() => {
+            document.addEventListener('click', closeSelector);
+        }, 0);
+    }
+
+    setEmoji(emoji) {
+        if (!this.element) return;
+        // 直接设置文本内容，不创建新元素
+        this.element.textContent = emoji;
+        localStorage.setItem(`character_emoji_${this.senderId}`, emoji);
+    }
+
+    loadEmoji() {
+        try {
+            return localStorage.getItem(`character_emoji_${this.senderId}`);
+        } catch (error) {
+            console.error('加载emoji失败:', error);
+            return null;
+        }
     }
 }
 
