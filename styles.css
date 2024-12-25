@@ -10,6 +10,7 @@ body {
     position: relative;
     width: 100%;
     height: 100%;
+    animation: pageEnter 0.8s ease-out;
 }
 
 /* 圣诞树样式 */
@@ -23,6 +24,7 @@ body {
     flex-direction: column;
     align-items: center;
     gap: 15px; /* 树干和树体之间的间距 */
+    animation: treeEnter 1s ease-out 0.3s backwards;
 }
 
 .tree-body {
@@ -57,7 +59,7 @@ body {
     background: #000000;
     clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
     opacity: 0.9;
-    animation: starPulse 2s infinite ease-in-out;
+    animation: starEnter 1.2s ease-out 0.6s backwards, starPulse 2s infinite ease-in-out 1.8s;
     cursor: pointer;
     transition: all 0.3s ease;
     filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.1));
@@ -84,6 +86,8 @@ body {
     opacity: 0.2;
     will-change: transform;
     filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.05));
+    z-index: 10000;
+    pointer-events: auto;
 }
 
 /* 音乐控制按钮 */
@@ -178,15 +182,21 @@ body {
 
 /* 优化祝福语样式 */
 .blessing {
-    position: absolute;
+    position: fixed;
     padding: 8px 16px;
-    background: rgba(0, 0, 0, 0.05);
+    background: rgba(255, 255, 255, 0.95);
     color: #000000;
     border-radius: 20px;
     font-size: 14px;
-    animation: blessingAppear 0.3s ease-out;
+    animation: blessingAppear 0.5s ease-out;
     backdrop-filter: blur(5px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    z-index: 10001;
+    pointer-events: none;
+    text-align: center;
+    min-width: 120px;
+    transform-origin: center bottom;
+    transition: all 0.3s ease;
 }
 
 /* 烟花效果 */
@@ -270,11 +280,11 @@ body {
 @keyframes blessingAppear {
     from {
         opacity: 0;
-        transform: translateY(10px);
+        transform: translateY(-20px) scale(0.8);
     }
     to {
         opacity: 1;
-        transform: translateY(0);
+        transform: translateY(0) scale(1);
     }
 }
 
@@ -885,8 +895,24 @@ body {
     align-items: center;
     justify-content: space-between;
     padding: 0 20px;
-    z-index: 100;
+    z-index: 9000;
     border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease-out;
+}
+
+/* 菜单栏收缩状态 */
+.menu-bar.hidden {
+    transform: translateY(-100%);
+}
+
+/* 菜单触发区域 */
+.menu-trigger {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 20px;
+    z-index: 99;
 }
 
 .menu-bar .logo {
@@ -927,9 +953,28 @@ body {
     background: rgba(0, 0, 0, 0.05);
 }
 
-/* 修改雪花容器样式确保在菜单栏上方 */
+/* 修改雪花容器样式 */
 .snow-container {
-    z-index: 101;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+    pointer-events: none;
+}
+
+/* 修改雪花样式 */
+.snowflake {
+    position: absolute;
+    color: #000000;
+    font-size: 16px;
+    user-select: none;
+    animation: snowfall linear;
+    opacity: 0.2;
+    will-change: transform;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.05));
+    z-index: 10000;
+    pointer-events: auto;
 }
 
 /* 添加音乐播放状态样式 */
@@ -1057,5 +1102,89 @@ body {
 
     .message-input-container {
         bottom: 10px;
+    }
+}
+
+/* 添加全局过渡动画 */
+@keyframes pageEnter {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes treeEnter {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) scale(1);
+    }
+}
+
+@keyframes starEnter {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) scale(0.5) rotate(-180deg);
+    }
+    to {
+        opacity: 0.9;
+        transform: translateX(-50%) scale(1) rotate(0);
+    }
+}
+
+/* 修改分享界面容器样式 */
+.share-container {
+    max-width: 800px;
+    margin: 80px auto 0;
+    padding: 20px;
+    animation: pageEnter 0.8s ease-out;
+}
+
+/* 修改分享卡片样式 */
+.share-card {
+    /* ... 其他样式保持不变 ... */
+    opacity: 0;
+    animation: cardEnter 0.8s ease-out forwards;
+}
+
+.share-card:nth-child(1) {
+    animation-delay: 0.3s;
+}
+
+.share-card:nth-child(2) {
+    animation-delay: 0.5s;
+}
+
+@keyframes cardEnter {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 修改返回按钮样式 */
+.back-button {
+    /* ... 其他样式保持不变 ... */
+    opacity: 0;
+    animation: fadeIn 0.5s ease-out 0.8s forwards;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
     }
 } 

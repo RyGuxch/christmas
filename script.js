@@ -101,14 +101,18 @@ createLights();
 
 // 添加祝福语数组
 const blessings = [
-    "🎄 圣诞快乐！",
-    "🎅 新年好运！",
-    "✨ 心想事成！",
-    "🎁 平安喜乐！",
-    "⭐ 万事如意！",
-    "🔔 铃儿响叮当！",
-    "❄️ 冬日暖心愿！",
-    "🎀 幸福永相伴！"
+    "🎄 愿你的圣诞充满欢笑与温暖",
+    "🎅 圣诞老人悄悄为你准备了礼物",
+    "✨ 愿圣诞星光照亮你的梦想",
+    "🎁 这个圣诞有我为你送上祝福",
+    "⭐ 愿你的生活像圣诞树一样闪耀",
+    "🔔 听，天使在为你唱圣诞颂歌",
+    "❄️ 让温暖的祝福像雪花般飘向你",
+    "🎀 愿平安喜乐与你相伴",
+    "🌟 这个冬天因你的笑容而温暖",
+    "🍪 分享一块圣诞姜饼的温馨",
+    "🦌 驯鹿已经准备好带来好运",
+    "🕯️ 用祝福点亮你的圣诞夜"
 ];
 
 // 处理雪花点击事件
@@ -127,17 +131,25 @@ function showBlessing(x, y) {
     const text = blessings[Math.floor(Math.random() * blessings.length)];
     blessing.textContent = text;
     
-    // 随机位置偏移
-    const offsetX = (Math.random() - 0.5) * 60;
-    const offsetY = (Math.random() - 0.5) * 60;
+    // 计算安全的显示位置
+    const safeY = Math.min(y, window.innerHeight - 100); // 确保不会超出底部
+    const safeX = Math.min(Math.max(x, 100), window.innerWidth - 100); // 确保不会超出左右边界
     
-    blessing.style.left = (x + offsetX) + 'px';
-    blessing.style.top = (y + offsetY) + 'px';
+    // 随机位置偏移
+    const offsetX = (Math.random() - 0.5) * 40;
+    const offsetY = Math.min(20 + Math.random() * 20, 40); // 向下偏移，但限制最大值
+    
+    blessing.style.left = (safeX + offsetX) + 'px';
+    blessing.style.top = (safeY + offsetY) + 'px';
     
     document.querySelector('.blessing-container').appendChild(blessing);
     
     // 动画结束后移除元素
-    setTimeout(() => blessing.remove(), 3000);
+    setTimeout(() => {
+        blessing.style.opacity = '0';
+        blessing.style.transform = 'translateY(20px) scale(0.8)';
+        setTimeout(() => blessing.remove(), 500);
+    }, 2500);
 }
 
 // 星星点击效果
@@ -958,3 +970,47 @@ styles.textContent = `
     }
 `;
 document.head.appendChild(styles); 
+
+// 添加菜单栏控制
+let menuTimeout;
+const menuBar = document.querySelector('.menu-bar');
+
+// 创建菜单触发区域
+const menuTrigger = document.createElement('div');
+menuTrigger.className = 'menu-trigger';
+document.body.appendChild(menuTrigger);
+
+// 监听鼠标移动
+document.addEventListener('mousemove', (e) => {
+    if (e.clientY < 20) {
+        // 鼠标移动到顶部，显示菜单
+        menuBar.classList.remove('hidden');
+        clearTimeout(menuTimeout);
+    } else if (e.clientY > 50) {
+        // 鼠标移开，延迟隐藏菜单
+        clearTimeout(menuTimeout);
+        menuTimeout = setTimeout(() => {
+            menuBar.classList.add('hidden');
+        }, 500);
+    }
+});
+
+// 监听菜单栏悬停
+menuBar.addEventListener('mouseenter', () => {
+    clearTimeout(menuTimeout);
+    menuBar.classList.remove('hidden');
+});
+
+menuBar.addEventListener('mouseleave', () => {
+    menuTimeout = setTimeout(() => {
+        menuBar.classList.add('hidden');
+    }, 500);
+});
+
+// 初始状态设置为显示
+menuBar.classList.remove('hidden');
+
+// 3秒后自动隐藏
+setTimeout(() => {
+    menuBar.classList.add('hidden');
+}, 2000); 
