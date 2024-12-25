@@ -5,11 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>圣诞快乐</title>
     <link rel="stylesheet" href="styles.css">
-    <!-- Firebase SDK -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
-        import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js";
-    </script>
 </head>
 <body>
     <div class="container">
@@ -22,7 +17,6 @@
         <div class="snow-container"></div>
         
         <div class="gifts-container"></div>
-        
         <div class="blessing-container"></div>
         
         <audio id="bgMusic" loop>
@@ -33,6 +27,20 @@
         <audio id="bellSound">
             <source src="bell.mp3" type="audio/mp3">
         </audio>
+
+        <!-- 消息历史区域 -->
+        <div class="history-modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>历史消息</h3>
+                    <div class="modal-actions">
+                        <button class="clear-all-btn">清空全部</button>
+                        <button class="close-modal">×</button>
+                    </div>
+                </div>
+                <div class="message-history"></div>
+            </div>
+        </div>
         
         <div class="message-input-container">
             <form class="message-input-wrapper" onsubmit="return false;">
@@ -50,22 +58,16 @@
         </div>
         
         <div class="character-container"></div>
-        
-        <div class="history-modal" style="display: none;">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3>历史消息</h3>
-                    <div class="modal-actions">
-                        <button class="clear-all-btn">清空全部</button>
-                        <button class="close-modal">×</button>
-                    </div>
-                </div>
-                <div class="message-history"></div>
-            </div>
-        </div>
     </div>
+
+    <!-- 先加载本地脚本 -->
     <script src="script.js"></script>
-    <script>
+
+    <!-- Firebase 相关代码 -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+        import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js";
+
         // Firebase 配置
         const firebaseConfig = {
             apiKey: "AIzaSyDLimspjrv6ChQpehQZmO9QVow6CYWB5e0",
@@ -83,34 +85,67 @@
         const database = getDatabase(app);
         const messagesRef = ref(database, 'messages');
 
-        // 发送消息
-        document.getElementById('sendMessage').addEventListener('click', function() {
-            const messageInput = document.getElementById('messageInput');
-            const message = messageInput.value.trim();
-            
-            if (message) {
-                // 将消息保存到 Firebase
-                push(messagesRef, {
-                    text: message,
-                    timestamp: Date.now()
-                });
-                messageInput.value = '';
+        // 获取 DOM 元素
+        const messageInput = document.getElementById('messageInput');
+        const sendButton = document.getElementById('sendMessage');
+        const messageHistory = document.querySelector('.message-history');
+
+        // 修改发送消息的处理
+        sendButton.addEventListener('click', async () => {
+            const text = messageInput.value.trim();
+            if (text) {
+                try {
+                    // 发送到 Firebase，包含发送者信息
+                    await push(messagesRef, {
+                        text,
+                        timestamp: Date.now(),
+                        senderId: sessionUserId  // 添加发送者ID
+                    });
+                    messageInput.value = '';
+                    
+                    // 创建本地角色显示消息
+                    new Character(text);
+                } catch (error) {
+                    console.error('发送失败:', error);
+                }
             }
         });
 
-        // 监听新消息
+        // 修改消息监听逻辑
         onChildAdded(messagesRef, (snapshot) => {
             const message = snapshot.val();
-            const messageHistory = document.querySelector('.message-history');
             
-            // 创建新消息元素
+            // 添加到历史记录
             const messageElement = document.createElement('div');
             messageElement.className = 'message-item';
             messageElement.textContent = message.text;
-            
-            // 添加到历史消息区域
             messageHistory.appendChild(messageElement);
             messageHistory.scrollTop = messageHistory.scrollHeight;
+
+            // 只有当消息来自其他用户时才创建新角色
+            if (message.senderId !== sessionUserId) {
+                new Character(message.text);
+            }
+        });
+
+        // 回车发送
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                sendButton.click();
+            }
+        });
+
+        // 清空消息按钮功能
+        document.querySelector('.clear-all-btn').addEventListener('click', () => {
+            if (confirm('确定要清空所有消息吗？')) {
+                messageHistory.innerHTML = '';
+            }
+        });
+
+        // 关闭历史消息模态框
+        document.querySelector('.close-modal').addEventListener('click', () => {
+            document.querySelector('.history-modal').style.display = 'none';
         });
     </script>
 </body>

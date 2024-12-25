@@ -6,6 +6,14 @@ function log(...args) {
     }
 }
 
+// 在 script.js 开头添加用户标识生成函数
+function generateUserId() {
+    return 'user_' + Math.random().toString(36).substr(2, 9);
+}
+
+// 为每个会话创建唯一的用户ID
+const sessionUserId = generateUserId();
+
 // 雪花生成
 function createSnowflake() {
     const snowflake = document.createElement('div');
@@ -30,13 +38,39 @@ setInterval(createSnowflake, 200);
 const music = document.getElementById('bgMusic');
 const musicBtn = document.getElementById('musicToggle');
 
-musicBtn.addEventListener('click', () => {
-    if (music.paused) {
-        music.play();
-        musicBtn.classList.add('playing');
-    } else {
-        music.pause();
-        musicBtn.classList.remove('playing');
+// 修改音乐播放的初始化逻辑
+document.addEventListener('DOMContentLoaded', function() {
+    const bgMusic = document.getElementById('bgMusic');
+    const musicToggle = document.getElementById('musicToggle');
+    let isMusicPlaying = false;
+
+    // 改为点击按钮时才播放音乐
+    musicToggle.addEventListener('click', function() {
+        if (!isMusicPlaying) {
+            bgMusic.play()
+                .then(() => {
+                    isMusicPlaying = true;
+                    musicToggle.classList.add('playing');
+                })
+                .catch(error => {
+                    console.error('播放失败:', error);
+                });
+        } else {
+            bgMusic.pause();
+            isMusicPlaying = false;
+            musicToggle.classList.remove('playing');
+        }
+    });
+
+    // 铃铛声音也需要用户交互后才能播放
+    const bellSound = document.getElementById('bellSound');
+    function playBellSound() {
+        if (bellSound) {
+            bellSound.play()
+                .catch(error => {
+                    console.error('铃铛声播放失败:', error);
+                });
+        }
     }
 });
 
