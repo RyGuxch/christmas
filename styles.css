@@ -948,4 +948,114 @@ body {
     to {
         transform: rotate(360deg);
     }
+}
+
+/* 添加响应式设计 */
+@media (max-width: 768px) {
+    /* 调整圣诞树大小 */
+    .tree-body {
+        border-left: 100px solid transparent;
+        border-right: 100px solid transparent;
+        border-bottom: 200px solid #000000;
+    }
+
+    .tree-base {
+        width: 40px;
+        height: 40px;
+    }
+
+    /* 调整输入框位置和大小 */
+    .message-input-container {
+        right: 20px;
+        left: 20px;
+        bottom: 20px;
+        transform: none;
+        width: auto;
+        max-width: none;
+    }
+
+    .message-input-wrapper {
+        width: 100%;
+        background: rgba(241, 241, 241, 0.95);
+        backdrop-filter: blur(10px);
+    }
+
+    /* 调整菜单栏 */
+    .menu-bar {
+        padding: 0 12px;
+    }
+
+    .menu-items {
+        gap: 4px;
+    }
+
+    .menu-btn {
+        padding: 8px 12px;
+    }
+
+    .menu-btn span {
+        display: none;  /* 在手机端隐藏按钮文字 */
+    }
+
+    .menu-btn svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    /* 调整模态框 */
+    .modal-content {
+        width: 95%;
+        margin: 10px;
+    }
+
+    /* 调整管理员面板 */
+    .admin-panel-content {
+        width: 95%;
+        padding: 16px;
+    }
+
+    /* 调整字体大小 */
+    .blessing {
+        font-size: 12px;
+        padding: 6px 12px;
+    }
+
+    /* 调整雪花大小 */
+    .snowflake {
+        font-size: 12px;
+    }
+
+    /* 调整星星大小 */
+    .star {
+        width: 30px;
+        height: 30px;
+    }
+
+    /* 调整礼物大小 */
+    .gift {
+        width: 30px;
+        height: 30px;
+    }
+
+    .gift::before {
+        font-size: 30px;
+    }
+}
+
+/* 添加横屏模式支持 */
+@media (max-height: 500px) and (orientation: landscape) {
+    .tree-body {
+        border-left: 75px solid transparent;
+        border-right: 75px solid transparent;
+        border-bottom: 150px solid #000000;
+    }
+
+    .tree-base {
+        width: 30px;
+        height: 30px;
+    }
+
+    .message-input-container {
+        bottom: 10px;
+    }
 } 
