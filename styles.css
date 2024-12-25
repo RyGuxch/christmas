@@ -1,0 +1,569 @@
+body {
+    margin: 0;
+    height: 100vh;
+    background: #ffffff;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+/* 圣诞树样式 */
+.christmas-tree {
+    position: absolute;
+    left: 50%;
+    bottom: 20%;
+    transform: translateX(-50%);
+    filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.1));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px; /* 树干和树体之间的间距 */
+}
+
+.tree-body {
+    width: 0;
+    height: 0;
+    border-left: 150px solid transparent;
+    border-right: 150px solid transparent;
+    border-bottom: 300px solid #000000;
+    position: relative;
+    opacity: 0.9;
+    transition: all 0.3s ease;
+}
+
+.tree-base {
+    width: 50px;
+    height: 50px;
+    background: #000000;
+    position: relative; /* 改为相对定位 */
+    opacity: 0.9;
+    border-radius: 3px;
+    margin-top: -10px; /* 微调位置 */
+}
+
+/* 树顶星星 */
+.star {
+    position: absolute;
+    left: 50%;
+    top: 15%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 40px;
+    background: #000000;
+    clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+    opacity: 0.9;
+    animation: starPulse 2s infinite ease-in-out;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.1));
+}
+
+@keyframes starPulse {
+    0%, 100% {
+        opacity: 0.9;
+        transform: translateX(-50%) scale(1);
+    }
+    50% {
+        opacity: 0.7;
+        transform: translateX(-50%) scale(1.1);
+    }
+}
+
+/* 雪花样式 */
+.snowflake {
+    position: absolute;
+    color: #000000;
+    font-size: 16px;
+    user-select: none;
+    animation: snowfall linear;
+    opacity: 0.2;
+    will-change: transform;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.05));
+}
+
+/* 音乐控制按钮 */
+.music-btn {
+    position: fixed;
+    right: 20px;
+    top: 20px;
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #000000;
+    opacity: 0.9;
+    z-index: 100;
+    transition: all 0.3s ease;
+    padding: 10px;
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 音乐图标样式 */
+.music-btn::before {
+    content: '♫'; /* 默认显示暂停状态的图标 */
+    transition: all 0.3s ease;
+    font-size: 24px;
+    opacity: 0.8;
+}
+
+/* 播放状态的图标 */
+.music-btn.playing::before {
+    content: '♪';
+    animation: musicRotate 3s infinite linear;
+}
+
+.music-btn:hover {
+    opacity: 0.7;
+    background: rgba(0, 0, 0, 0.05);
+    transform: scale(1.1);
+}
+
+/* 音乐图标旋转动画 */
+@keyframes musicRotate {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* 添加礼物样式 */
+.gift {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    transition: transform 0.3s ease-out;
+    z-index: 10;
+    opacity: 0;
+    animation: giftAppear 0.5s forwards;
+}
+
+.gift::before {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    font-size: 40px;
+}
+
+/* 不同类型的礼物 */
+.gift.type1::before { content: '🎁'; }
+.gift.type2::before { content: '🎀'; }
+.gift.type3::before { content: '🎄'; }
+.gift.type4::before { content: '🔔'; }
+.gift.type5::before { content: '⭐'; }
+
+@keyframes giftAppear {
+    0% {
+        opacity: 0;
+        transform: scale(0.3) translateY(-20px);
+    }
+    50% {
+        transform: scale(1.1) translateY(5px);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+@keyframes giftDisappear {
+    0% {
+        opacity: 1;
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1) translateY(-10px);
+    }
+    100% {
+        opacity: 0;
+        transform: scale(0.3) translateY(-30px);
+    }
+}
+
+/* 优化祝福语样式 */
+.blessing {
+    position: absolute;
+    padding: 8px 16px;
+    background: rgba(0, 0, 0, 0.05);
+    color: #000000;
+    border-radius: 20px;
+    font-size: 14px;
+    animation: blessingAppear 0.3s ease-out;
+    backdrop-filter: blur(5px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* 烟花效果 */
+.firework {
+    position: fixed;
+    width: 3px;
+    height: 20px;
+    background: #000000;
+    opacity: 0.2;
+    transform-origin: bottom;
+    animation: firework 1s ease-out forwards;
+}
+
+@keyframes firework {
+    0% {
+        transform: scaleY(1);
+        opacity: 0.2;
+    }
+    50% {
+        transform: scaleY(1.2);
+        opacity: 0.3;
+    }
+    100% {
+        transform: scaleY(0);
+        opacity: 0;
+    }
+}
+
+/* 添加圣诞树灯光效果 */
+.light {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #000000;
+    opacity: 0.15;
+    animation: lightPulse 2s infinite ease-in-out;
+    filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.1));
+}
+
+@keyframes lightPulse {
+    0%, 100% {
+        opacity: 0.15;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 0.3;
+        transform: scale(1.5);
+    }
+}
+
+/* 添加礼物悬停效果 */
+.gift:hover {
+    transform: scale(1.15) translateY(-5px);
+}
+
+/* 添加全局动画优化 */
+* {
+    backface-visibility: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+.christmas-tree:hover .tree-body,
+.christmas-tree:hover .tree-base {
+    opacity: 0.7;
+}
+
+.star:hover {
+    opacity: 0.7;
+    transform: translateX(-50%) scale(1.1);
+}
+
+/* 保持原有动画 */
+@keyframes snowfall {
+    to {
+        transform: translateY(100vh);
+    }
+}
+
+@keyframes blessingAppear {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 消息输入框样式 */
+.message-input-container {
+    position: fixed;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 300px;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(20px);
+    border-radius: 16px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+}
+
+.message-input-wrapper {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    width: 100%;
+}
+
+#messageInput {
+    flex: 1;
+    min-width: 0; /* 防止输入框溢出 */
+    padding: 12px 16px;
+    border: none;
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.05);
+    color: #000000;
+    font-size: 16px;
+    transition: all 0.3s ease;
+}
+
+#messageInput:focus {
+    outline: none;
+    background: rgba(0, 0, 0, 0.08);
+    box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+}
+
+#messageInput::placeholder {
+    color: rgba(0, 0, 0, 0.4);
+}
+
+#sendMessage {
+    background: none;
+    border: none;
+    padding: 8px;
+    cursor: pointer;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+    min-width: 40px;
+    min-height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#sendMessage svg {
+    width: 24px;
+    height: 24px;
+}
+
+#sendMessage svg path {
+    fill: #000000; /* 改为黑色 */
+    opacity: 0.8;
+}
+
+#sendMessage:hover {
+    background: rgba(0, 0, 0, 0.05);
+    transform: scale(1.1);
+}
+
+#sendMessage:hover svg path {
+    opacity: 1;
+}
+
+/* 卡通小人样式 */
+.character {
+    position: fixed;
+    cursor: grab;
+    z-index: 100;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.character:active {
+    cursor: grabbing;
+}
+
+.character::before {
+    content: '🧑';
+    font-size: 40px;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    animation: bounce 1s infinite ease-in-out;
+    transition: all 0.3s ease;
+}
+
+.character:hover::before {
+    transform: translateX(-50%) scale(1.1);
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+}
+
+/* 消息气泡样式 */
+.message-bubble {
+    position: absolute;
+    top: -60px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255, 255, 255, 0.95);
+    padding: 8px 16px;
+    border-radius: 18px;
+    font-size: 14px;
+    white-space: nowrap;
+    animation: bubbleAppear 0.3s ease-out;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #333;
+    transition: all 0.3s ease;
+}
+
+.message-bubble::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 8px solid white;
+}
+
+@keyframes bubbleAppear {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) scale(0.8);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) scale(1);
+    }
+}
+
+/* 历史消息弹窗样式 */
+.history-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(5px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: modalFade 0.3s ease-out;
+}
+
+.modal-content {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 20px;
+    width: 80%;
+    max-width: 500px;
+    max-height: 80vh;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: #333;
+}
+
+.close-modal {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #666;
+    padding: 0 8px;
+}
+
+.message-history {
+    padding: 20px;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.history-item {
+    position: relative;
+    padding: 10px;
+    margin-bottom: 10px;
+    background: rgba(0, 0, 0, 0.05);
+    border-radius: 10px;
+    animation: itemAppear 0.3s ease-out;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.delete-message {
+    opacity: 0;
+    background: none;
+    border: none;
+    color: #ff4d4d;
+    cursor: pointer;
+    font-size: 18px;
+    padding: 4px;
+    transition: all 0.3s ease;
+}
+
+.history-item:hover .delete-message {
+    opacity: 1;
+}
+
+.delete-message:hover {
+    transform: scale(1.1);
+}
+
+@keyframes modalFade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes itemAppear {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.modal-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.clear-all-btn {
+    background: #ff4d4d;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.clear-all-btn:hover {
+    background: #ff3333;
+} 

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>圣诞快乐</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="star"></div>
+        <div class="christmas-tree">
+            <div class="tree-body"></div>
+            <div class="tree-lights"></div>
+            <div class="tree-base"></div>
+        </div>
+        <div class="snow-container"></div>
+        
+        <div class="gifts-container"></div>
+        
+        <div class="blessing-container"></div>
+        
+        <audio id="bgMusic" loop>
+            <source src="jingle-bells.mp3" type="audio/mp3">
+        </audio>
+        <button id="musicToggle" class="music-btn"></button>
+        
+        <audio id="bellSound">
+            <source src="bell.mp3" type="audio/mp3">
+        </audio>
+        
+        <div class="message-input-container">
+            <form class="message-input-wrapper" onsubmit="return false;">
+                <input type="text" 
+                       id="messageInput" 
+                       placeholder="输入你的圣诞祝福..." 
+                       maxlength="50"
+                       autocomplete="off">
+                <button type="button" id="sendMessage">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M2.01 21L23 12L2.01 3L2 10L17 12L2 14L2.01 21Z" fill="currentColor"/>
+                    </svg>
+                </button>
+            </form>
+        </div>
+        
+        <div class="character-container"></div>
+        
+        <div class="history-modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>历史消息</h3>
+                    <div class="modal-actions">
+                        <button class="clear-all-btn">清空全部</button>
+                        <button class="close-modal">×</button>
+                    </div>
+                </div>
+                <div class="message-history"></div>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html> 
