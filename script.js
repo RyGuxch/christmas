@@ -63,7 +63,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 .catch(error => {
                     console.error('播放失败:', error);
                 });
-        } else {
+    } else {
             bgMusic.pause();
             isMusicPlaying = false;
             musicToggle.classList.remove('playing');
@@ -418,7 +418,7 @@ class Character {
         if (!message) {
             throw new Error('Message is required');
         }
-
+        
         this.senderId = senderId;
         this.messages = [message];
         this.element = null;
@@ -428,7 +428,7 @@ class Character {
         // 初始化元素
         this.initializeElement();
         // 显示初始消息
-        this.showMessage(message);
+            this.showMessage(message);
     }
 
     initializeElement() {
@@ -464,7 +464,7 @@ class Character {
                 } else {
                     this.showHistory();
                 }
-            } else {
+        } else {
                 this.showHistory();
             }
         });
@@ -709,15 +709,15 @@ class Character {
             
             // 只有当前用户可以删除自己的消息
             if (this.senderId === sessionUserId) {
-                const deleteBtn = document.createElement('button');
-                deleteBtn.classList.add('delete-message');
-                deleteBtn.innerHTML = '×';
-                deleteBtn.title = '删除此消息';
-                
-                // 删除单条消息
-                deleteBtn.addEventListener('click', async (e) => {
-                    e.stopPropagation();
-                    if (confirm('确定要删除这条消息吗？')) {
+            const deleteBtn = document.createElement('button');
+            deleteBtn.classList.add('delete-message');
+            deleteBtn.innerHTML = '×';
+            deleteBtn.title = '删除此消息';
+            
+            // 删除单条消息
+            deleteBtn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                if (confirm('确定要删除这条消息吗？')) {
                         try {
                             // 从全局获取 Firebase 函数
                             const { ref, get, remove } = await import('https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js');
@@ -734,8 +734,8 @@ class Character {
                                         await remove(ref(window.database, `messages/${key}`));
                                         
                                         // 更新本地状态
-                                        this.messages.splice(index, 1);
-                                        item.style.animation = 'itemDisappear 0.3s ease-out forwards';
+                    this.messages.splice(index, 1);
+                    item.style.animation = 'itemDisappear 0.3s ease-out forwards';
                                         
                                         setTimeout(() => {
                                             item.remove();
@@ -757,10 +757,10 @@ class Character {
                             console.error('删除失败:', error);
                             alert('删除失败，请重试');
                         }
-                    }
-                });
-                
-                item.appendChild(deleteBtn);
+                }
+            });
+            
+            item.appendChild(deleteBtn);
             }
             
             historyContainer.appendChild(item);
@@ -769,8 +769,8 @@ class Character {
         // 清空按钮只对当前用户的消息可见
         if (this.senderId === sessionUserId) {
             clearAllBtn.style.display = 'block';
-            clearAllBtn.onclick = async () => {
-                if (confirm('确定要清空所有消息记录吗？此操作不可恢复！')) {
+        clearAllBtn.onclick = async () => {
+            if (confirm('确定要清空所有消息记录吗？此操作不可恢复！')) {
                     try {
                         // 从全局获取 Firebase 函数
                         const { ref, get, remove } = await import('https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js');
@@ -792,9 +792,9 @@ class Character {
                                 await Promise.all(deletePromises);
                                 
                                 // 更新本地状态
-                                this.messages = [];
-                                historyContainer.innerHTML = '';
-                                modal.style.display = 'none';
+                this.messages = [];
+                historyContainer.innerHTML = '';
+                modal.style.display = 'none';
                                 
                                 // 移除角色显示
                                 if (this.element && this.element.parentNode) {

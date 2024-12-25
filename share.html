@@ -201,7 +201,7 @@
 
     <script>
         function generateQRCode() {
-            const url = window.location.origin + window.location.pathname.replace('share.html', '');
+            const url = 'https://ryexu.github.io/Christmas/';
             const qrContainer = document.querySelector('.qr-code');
             
             qrContainer.innerHTML = '';
@@ -223,7 +223,7 @@
         }
 
         function copyLink() {
-            const url = window.location.origin + window.location.pathname.replace('share.html', '');
+            const url = 'https://ryexu.github.io/Christmas/';
             navigator.clipboard.writeText(url).then(() => {
                 const button = document.querySelector('.share-button');
                 button.textContent = '已复制！';
