@@ -68,6 +68,17 @@
             </div>
         </div>
         
+        <!-- 添加管理员面板结构 -->
+        <div class="admin-panel" style="display: none;">
+            <div class="admin-panel-content">
+                <div class="admin-panel-header">
+                    <h3>管理员面板</h3>
+                    <button class="close-admin-panel">×</button>
+                </div>
+                <div class="admin-messages-container"></div>
+            </div>
+        </div>
+
         <div class="message-input-container">
             <form class="message-input-wrapper" onsubmit="return false;">
                 <input type="text" 
@@ -122,12 +133,18 @@
         // 在 Firebase 初始化后，添加一个变量来跟踪已显示的消息
         const displayedMessages = new Set();
 
-        // 添加删除消息的函数
-        window.deleteMessage = async (messageKey, senderId) => {
+        // 修改消息删除函数
+        window.deleteMessage = async (messageKey, senderId, isAdmin = false) => {
             try {
-                if (senderId === sessionUserId) {
+                if (senderId === sessionUserId || isAdmin) {
                     await remove(ref(window.database, `messages/${messageKey}`));
-                    displayedMessages.delete(messageKey); // 从已显示集合中移除
+                    displayedMessages.delete(messageKey);
+                    processedMessages.delete(messageKey); // 确保消息能被重新处理
+                    
+                    // 如果不是管理员操作，显示用户历史记录
+                    if (!isAdmin) {
+                        showUserHistory(senderId);
+                    }
                     return true;
                 }
                 return false;
@@ -137,16 +154,66 @@
             }
         };
 
-        // 修改消息加载逻辑
-        onValue(messagesRef, (snapshot) => {
-            // 清空历史记录显示
-            messageHistory.innerHTML = '';
-            // 保持已处理消息的跟踪
-            processedMessages.clear();
+        // 修改显示用户历史记录的函数
+        const showUserHistory = (userId) => {
+            const historyModal = document.querySelector('.history-modal');
+            const messageHistory = document.querySelector('.message-history');
+            
+            // 添加实时监听
+            const updateHistory = (snapshot) => {
+                const messages = snapshot.val();
+                messageHistory.innerHTML = '';
+                
+                if (messages) {
+                    // 只显示用户自己的消息并按时间排序
+                    Object.entries(messages)
+                        .map(([key, message]) => ({ key, ...message }))
+                        .filter(message => message.senderId === userId)
+                        .sort((a, b) => a.timestamp - b.timestamp)
+                        .forEach(message => {
+                            const messageElement = document.createElement('div');
+                            messageElement.className = 'message-item';
+                            messageElement.textContent = message.text;
+                            
+                            const deleteBtn = document.createElement('button');
+                            deleteBtn.className = 'delete-message';
+                            deleteBtn.innerHTML = '×';
+                            deleteBtn.onclick = async () => {
+                                if (confirm('确定要删除这条消息吗？')) {
+                                    await deleteMessage(message.key, message.senderId, false);
+                                }
+                            };
+                            messageElement.appendChild(deleteBtn);
+                            messageHistory.appendChild(messageElement);
+                        });
+                }
+            };
 
+            // 添加消息监听器
+            const historyListener = onValue(messagesRef, updateHistory);
+
+            // 显示历史记录面板
+            historyModal.style.display = 'flex';
+
+            // 修改关闭按钮事件
+            const closeBtn = document.querySelector('.close-modal');
+            closeBtn.onclick = () => {
+                historyListener(); // 移除监听器
+                historyModal.style.display = 'none';
+            };
+
+            // 保存当前用户的历史记录监听器引用
+            if (window.currentHistoryListener) {
+                window.currentHistoryListener(); // 移除之前的监听器
+            }
+            window.currentHistoryListener = historyListener;
+        };
+
+        // 修改消息监听逻辑
+        onValue(messagesRef, (snapshot) => {
             const messages = snapshot.val();
             if (messages) {
-                // 按时间戳排序消息
+                // 更新角色消息
                 Object.entries(messages)
                     .map(([key, message]) => ({ key, ...message }))
                     .sort((a, b) => a.timestamp - b.timestamp)
@@ -154,41 +221,14 @@
                         if (!processedMessages.has(message.key)) {
                             processedMessages.add(message.key);
                             
-                            // 添加到历史记录
-                            const messageElement = document.createElement('div');
-                            messageElement.className = 'message-item';
-                            messageElement.textContent = message.text;
-                            
-                            // 如果是当前用户的消息，添加删除按钮
-                            if (message.senderId === sessionUserId) {
-                                const deleteBtn = document.createElement('button');
-                                deleteBtn.className = 'delete-message';
-                                deleteBtn.innerHTML = '×';
-                                deleteBtn.onclick = async () => {
-                                    if (confirm('确定要删除这条消息吗？')) {
-                                        const success = await window.deleteMessage(message.key, message.senderId);
-                                        if (!success) {
-                                            alert('删除失败，请重试');
-                                        }
-                                    }
-                                };
-                                messageElement.appendChild(deleteBtn);
-                            }
-                            
-                            messageHistory.appendChild(messageElement);
-
-                            // 检查角色是否已存在
+                            // 更新角色消息
                             if (!Character.characters.has(message.senderId)) {
                                 Character.create(message.text, message.senderId);
-                            } else {
-                                // 如果角色已存在且消息未显示过，才更新消息
-                                if (!displayedMessages.has(message.key)) {
-                                    const character = Character.characters.get(message.senderId);
-                                    character.updateMessage(message.text);
-                                }
+                            } else if (!displayedMessages.has(message.key)) {
+                                const character = Character.characters.get(message.senderId);
+                                character.updateMessage(message.text);
                             }
                             
-                            // 将消息标记为已显示
                             displayedMessages.add(message.key);
                         }
                     });
@@ -213,11 +253,11 @@
             }
         });
 
-        // 净化星愿功能
+        // 修改管理员清空功能
         document.getElementById('adminClearBtn').addEventListener('click', async () => {
             const password = prompt('请输入管理员密码：');
             if (password === 'xr040615') {
-                // 显示管理员面板而不是直接清空
+                // 显示管理员面板
                 showAdminPanel();
             } else {
                 alert('密码错误！');
@@ -244,107 +284,90 @@
             document.querySelector('.history-modal').style.display = 'none';
         });
 
-        // 添加管理员面板相关函数
-        function showAdminPanel() {
-            // 创建管理员面板
-            const adminPanel = document.createElement('div');
-            adminPanel.className = 'admin-panel';
-            adminPanel.innerHTML = `
-                <div class="admin-panel-content">
-                    <div class="admin-panel-header">
-                        <h3>管理员面板</h3>
-                        <button class="close-admin-panel">×</button>
-                    </div>
-                    <div class="admin-panel-body">
-                        <div class="character-list"></div>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(adminPanel);
-
-            // 加载所有角色信息
-            loadCharacterList(adminPanel.querySelector('.character-list'));
-
-            // 关闭面板
-            adminPanel.querySelector('.close-admin-panel').onclick = () => {
-                adminPanel.remove();
-            };
-        }
-
-        function loadCharacterList(container) {
-            // 从数据库获取所有消息
-            const messagesRef = ref(window.database, 'messages');
-            get(messagesRef).then((snapshot) => {
-                if (snapshot.exists()) {
-                    const messages = snapshot.val();
-                    const characterMessages = {};
-
-                    // 按用户分组消息
+        // 修改管理员面板显示函数
+        const showAdminPanel = async () => {
+            const adminPanel = document.querySelector('.admin-panel');
+            const adminContent = document.querySelector('.admin-messages-container');
+            
+            // 添加实时监听
+            const updateAdminPanel = (snapshot) => {
+                const messages = snapshot.val();
+                if (messages) {
+                    // 按用户分组显示消息
+                    const messagesByUser = {};
                     Object.entries(messages).forEach(([key, message]) => {
-                        if (!characterMessages[message.senderId]) {
-                            characterMessages[message.senderId] = [];
+                        if (!messagesByUser[message.senderId]) {
+                            messagesByUser[message.senderId] = [];
                         }
-                        characterMessages[message.senderId].push({
-                            key,
-                            ...message
-                        });
+                        messagesByUser[message.senderId].push({ key, ...message });
                     });
 
-                    // 显示每个角色的信息
-                    Object.entries(characterMessages).forEach(([userId, messages]) => {
-                        const characterDiv = document.createElement('div');
-                        characterDiv.className = 'admin-character-item';
-                        characterDiv.innerHTML = `
+                    // 清空现有内容
+                    adminContent.innerHTML = '';
+
+                    // 添加每个用户的消息
+                    Object.entries(messagesByUser).forEach(([userId, userMessages]) => {
+                        const userSection = document.createElement('div');
+                        userSection.className = 'admin-character-item';
+                        
+                        const messagesList = userMessages.map(msg => `
+                            <div class="message-item">
+                                <span>${msg.text}</span>
+                                <button class="delete-single-message" onclick="deleteMessage('${msg.key}', '${msg.senderId}', true)">×</button>
+                            </div>
+                        `).join('');
+
+                        userSection.innerHTML = `
                             <div class="character-info">
                                 <span>用户ID: ${userId}</span>
-                                <span>消息数量: ${messages.length}</span>
+                                <div class="character-actions">
+                                    <button class="delete-messages" onclick="deleteUserMessages('${userId}')">删除此用户所有消息</button>
+                                </div>
                             </div>
-                            <div class="character-actions">
-                                <button class="delete-character">删除角色</button>
-                                <button class="delete-messages">删除消息</button>
-                            </div>
-                            <div class="message-list" style="display: none;">
-                                ${messages.map(msg => `
-                                    <div class="message-item">
-                                        <span>${msg.text}</span>
-                                        <button class="delete-single-message" data-key="${msg.key}">×</button>
-                                    </div>
-                                `).join('')}
-                            </div>
+                            <div class="message-list">${messagesList}</div>
                         `;
-
-                        // 删除角色按钮
-                        characterDiv.querySelector('.delete-character').onclick = async () => {
-                            if (confirm(`确定要删除此角色及其所有消息吗？`)) {
-                                await Promise.all(messages.map(msg => 
-                                    remove(ref(window.database, `messages/${msg.key}`))
-                                ));
-                                characterDiv.remove();
-                            }
-                        };
-
-                        // 删除消息按钮
-                        characterDiv.querySelector('.delete-messages').onclick = () => {
-                            const messageList = characterDiv.querySelector('.message-list');
-                            messageList.style.display = messageList.style.display === 'none' ? 'block' : 'none';
-                        };
-
-                        // 单条消息删除
-                        characterDiv.querySelectorAll('.delete-single-message').forEach(btn => {
-                            btn.onclick = async () => {
-                                const messageKey = btn.dataset.key;
-                                if (confirm('确定要删除这条消息吗？')) {
-                                    await remove(ref(window.database, `messages/${messageKey}`));
-                                    btn.closest('.message-item').remove();
-                                }
-                            };
-                        });
-
-                        container.appendChild(characterDiv);
+                        
+                        adminContent.appendChild(userSection);
                     });
+                } else {
+                    adminContent.innerHTML = '<div class="no-messages">暂无消息</div>';
                 }
-            });
-        }
+            };
+
+            // 添加消息监听器
+            const messagesListener = onValue(messagesRef, updateAdminPanel);
+
+            // 显示面板
+            adminPanel.style.display = 'flex';
+
+            // 添加关闭按钮事件
+            document.querySelector('.close-admin-panel').onclick = () => {
+                // 关闭面板时移除监听器
+                messagesListener();
+                adminPanel.style.display = 'none';
+            };
+        };
+
+        // 修改删除用户所有消息的函数
+        window.deleteUserMessages = async (userId) => {
+            if (confirm(`确定要删除此用户的所有消息吗？`)) {
+                const snapshot = await get(messagesRef);
+                const messages = snapshot.val();
+                if (messages) {
+                    const deletePromises = Object.entries(messages)
+                        .filter(([_, message]) => message.senderId === userId)
+                        .map(async ([key, _]) => {
+                            await deleteMessage(key, userId, true);
+                        });
+                    
+                    await Promise.all(deletePromises);
+                    
+                    // 清理已处理的消息记录
+                    processedMessages.clear();
+                    displayedMessages.clear();
+                }
+            }
+        };
     </script>
 </body>
 </html> 
