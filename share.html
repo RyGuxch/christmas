@@ -5,28 +5,45 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>分享 - 圣诞快乐</title>
     <link rel="stylesheet" href="styles.css">
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
     <style>
         .share-container {
             max-width: 800px;
             margin: 80px auto 0;
             padding: 20px;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .share-header {
             text-align: center;
             margin-bottom: 40px;
+            position: relative;
         }
 
         .share-header h1 {
             font-size: 28px;
             color: #333;
-            margin-bottom: 10px;
+            margin-bottom: 16px;
+            font-weight: 600;
+            letter-spacing: 1px;
         }
 
         .share-header p {
             color: #666;
             font-size: 16px;
+            line-height: 1.6;
+            max-width: 600px;
+            margin: 0 auto;
         }
 
         .share-options {
@@ -34,6 +51,7 @@
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 20px;
             margin-bottom: 40px;
+            perspective: 1000px;
         }
 
         .share-card {
@@ -41,19 +59,44 @@
             border-radius: 16px;
             padding: 24px;
             text-align: center;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
             transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            transform-style: preserve-3d;
         }
 
         .share-card:hover {
-            transform: translateY(-5px);
+            transform: translateY(-5px) rotateX(5deg);
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            border-color: rgba(0, 0, 0, 0.1);
         }
 
         .share-icon {
             width: 48px;
             height: 48px;
             margin: 0 auto 16px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .share-icon::after {
+            content: '';
+            position: absolute;
+            width: 64px;
+            height: 64px;
+            background: rgba(0, 0, 0, 0.03);
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: -1;
+            transition: all 0.3s ease;
+        }
+
+        .share-card:hover .share-icon::after {
+            transform: translate(-50%, -50%) scale(1.2);
+            background: rgba(0, 0, 0, 0.05);
         }
 
         .share-title {
@@ -61,12 +104,16 @@
             font-weight: bold;
             margin-bottom: 8px;
             color: #333;
+            position: relative;
+            display: inline-block;
         }
 
         .share-description {
             font-size: 14px;
             color: #666;
-            margin-bottom: 16px;
+            margin: 0 auto 20px;
+            max-width: 200px;
+            line-height: 1.6;
         }
 
         .share-button {
@@ -122,13 +169,15 @@
             gap: 8px;
             font-size: 14px;
             transition: all 0.3s ease;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            backdrop-filter: blur(10px);
+            z-index: 100;
         }
 
         .back-button:hover {
             background: rgba(0, 0, 0, 0.05);
             transform: translateX(-3px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
         }
 
         .back-button svg {
@@ -146,12 +195,56 @@
             align-items: center;
             justify-content: center;
             padding: 10px;
-            border: 1px solid rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
         }
 
-        .qr-code canvas {
+        .qr-code::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(
+                45deg,
+                transparent,
+                rgba(255, 255, 255, 0.8),
+                transparent
+            );
+            transform: translateX(-100%);
+            transition: transform 0.6s;
+        }
+
+        .share-card:hover .qr-code::before {
+            transform: translateX(100%);
+        }
+
+        .qr-code img {
             width: 100% !important;
             height: 100% !important;
+            object-fit: contain;
+            border-radius: 4px;
+        }
+
+        @media (max-width: 768px) {
+            .share-container {
+                margin-top: 40px;
+            }
+            
+            .share-header h1 {
+                font-size: 24px;
+            }
+            
+            .share-options {
+                gap: 16px;
+            }
+            
+            .share-card {
+                padding: 20px;
+            }
         }
     </style>
 </head>
@@ -193,37 +286,15 @@
                 <h3 class="share-title">二维码</h3>
                 <p class="share-description">扫描二维码访问</p>
                 <div class="qr-code">
-                    二维码将在这里显示
+                    <img src="qr-ryefun.png" alt="ryefun.site 二维码" />
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        function generateQRCode() {
-            const url = 'https://ryexu.github.io/Christmas/';
-            const qrContainer = document.querySelector('.qr-code');
-            
-            qrContainer.innerHTML = '';
-            
-            QRCode.toCanvas(qrContainer, url, {
-                width: 180,
-                height: 180,
-                margin: 1,
-                color: {
-                    dark: '#000000',
-                    light: '#ffffff'
-                }
-            }, function (error) {
-                if (error) {
-                    console.error('二维码生成失败:', error);
-                    qrContainer.innerHTML = '二维码生成失败';
-                }
-            });
-        }
-
         function copyLink() {
-            const url = 'https://ryexu.github.io/Christmas/';
+            const url = 'https://ryefun.site';
             navigator.clipboard.writeText(url).then(() => {
                 const button = document.querySelector('.share-button');
                 button.textContent = '已复制！';
@@ -235,8 +306,6 @@
                 alert('复制失败，请手动复制链接');
             });
         }
-
-        window.addEventListener('load', generateQRCode);
     </script>
 </body>
 </html> 
