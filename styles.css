@@ -566,4 +566,140 @@ body {
 
 .clear-all-btn:hover {
     background: #ff3333;
+}
+
+.admin-btn {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    padding: 8px 16px;
+    background-color: rgba(0, 0, 0, 0.1);
+    color: #000000;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    opacity: 0.5;
+    transition: all 0.3s ease;
+    font-size: 14px;
+    backdrop-filter: blur(5px);
+    z-index: 1000;
+    width: 120px;  /* 固定宽度 */
+    height: 36px;  /* 固定高度 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    letter-spacing: 1px;
+    text-align: center;
+    white-space: nowrap;  /* 防止文字换行 */
+}
+
+.admin-btn:hover {
+    opacity: 0.8;
+    background-color: rgba(0, 0, 0, 0.15);
+    transform: scale(1.05);
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+}
+
+/* 添加星星图标的动画 */
+.admin-btn:hover .sparkle {
+    animation: sparkle 1s infinite ease-in-out;
+}
+
+@keyframes sparkle {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.2); opacity: 0.8; }
+}
+
+.login-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+
+.login-content {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    width: 300px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.login-content input {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.login-content button {
+    padding: 10px;
+    background: #000;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: opacity 0.3s;
+}
+
+.login-content button:hover {
+    opacity: 0.8;
+}
+
+.error-message {
+    color: #ff4444;
+    font-size: 14px;
+    margin: 0;
+}
+
+.login-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.close-login {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #666;
+    padding: 0 8px;
+}
+
+.login-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.login-buttons button {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: opacity 0.3s;
+}
+
+#loginButton {
+    background: #000;
+    color: white;
+}
+
+#registerButton {
+    background: #666;
+    color: white;
+}
+
+.login-buttons button:hover {
+    opacity: 0.8;
 } 

@@ -58,6 +58,9 @@
         </div>
         
         <div class="character-container"></div>
+        
+        <!-- 添加管理员按钮，放在合适的位置 -->
+        <button id="adminClearBtn" class="admin-btn">✨ 净化星愿</button>
     </div>
 
     <!-- 先加载本地脚本 -->
@@ -66,7 +69,7 @@
     <!-- Firebase 相关代码 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
-        import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js";
+        import { getDatabase, ref, push, onChildAdded, remove, onValue, get, set } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js";
 
         // Firebase 配置
         const firebaseConfig = {
@@ -90,41 +93,77 @@
         const sendButton = document.getElementById('sendMessage');
         const messageHistory = document.querySelector('.message-history');
 
-        // 修改发送消息的处理
+        // 跟踪已处理的消息
+        const processedMessages = new Set();
+
+        // 加载历史消息
+        onValue(messagesRef, (snapshot) => {
+            // 清空现有显示
+            messageHistory.innerHTML = '';
+            Character.characters.clear();
+            processedMessages.clear();
+
+            const messages = snapshot.val();
+            if (messages) {
+                // 按时间戳排序消息
+                const sortedMessages = Object.entries(messages)
+                    .map(([key, message]) => ({ key, ...message }))
+                    .sort((a, b) => a.timestamp - b.timestamp);
+
+                // 显示所有消息
+                sortedMessages.forEach(message => {
+                    if (!processedMessages.has(message.key)) {
+                        processedMessages.add(message.key);
+                        
+                        // 添加到历史记录
+                        const messageElement = document.createElement('div');
+                        messageElement.className = 'message-item';
+                        messageElement.textContent = message.text;
+                        messageHistory.appendChild(messageElement);
+
+                        // 创建或更新角色
+                        Character.create(message.text, message.senderId);
+                    }
+                });
+            }
+        });
+
+        // 修改发送消息处理
         sendButton.addEventListener('click', async () => {
             const text = messageInput.value.trim();
             if (text) {
                 try {
-                    // 发送到 Firebase，包含发送者信息
                     await push(messagesRef, {
                         text,
                         timestamp: Date.now(),
-                        senderId: sessionUserId  // 添加发送者ID
+                        senderId: sessionUserId
                     });
                     messageInput.value = '';
-                    
-                    // 创建本地角色显示消息
-                    new Character(text);
                 } catch (error) {
                     console.error('发送失败:', error);
                 }
             }
         });
 
-        // 修改消息监听逻辑
-        onChildAdded(messagesRef, (snapshot) => {
-            const message = snapshot.val();
-            
-            // 添加到历史记录
-            const messageElement = document.createElement('div');
-            messageElement.className = 'message-item';
-            messageElement.textContent = message.text;
-            messageHistory.appendChild(messageElement);
-            messageHistory.scrollTop = messageHistory.scrollHeight;
-
-            // 只有当消息来自其他用户时才创建新角色
-            if (message.senderId !== sessionUserId) {
-                new Character(message.text);
+        // 净化星愿功能
+        document.getElementById('adminClearBtn').addEventListener('click', async () => {
+            const password = prompt('请输入管理员密码：');
+            if (password === 'xr040615') {
+                if (confirm('确定要清空所有消息吗？此操作不可恢复！')) {
+                    try {
+                        await remove(messagesRef);
+                        messageHistory.innerHTML = '';
+                        Character.characters.clear();
+                        document.querySelector('.character-container').innerHTML = '';
+                        processedMessages.clear();
+                        alert('所有消息已清空！');
+                    } catch (error) {
+                        console.error('清空消息失败:', error);
+                        alert('清空消息失败，请重试！');
+                    }
+                }
+            } else {
+                alert('密码错误！');
             }
         });
 

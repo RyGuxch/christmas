@@ -8,7 +8,15 @@ function log(...args) {
 
 // 在 script.js 开头添加用户标识生成函数
 function generateUserId() {
-    return 'user_' + Math.random().toString(36).substr(2, 9);
+    // 检查localStorage中是否已有用户ID
+    const savedUserId = localStorage.getItem('christmasUserId');
+    if (savedUserId) {
+        return savedUserId;
+    }
+    // 如果没有，生成新的ID并保存
+    const newUserId = 'user_' + Math.random().toString(36).substr(2, 9);
+    localStorage.setItem('christmasUserId', newUserId);
+    return newUserId;
 }
 
 // 为每个会话创建唯一的用户ID
@@ -356,35 +364,99 @@ class Database {
 
 // 修改 Character 类以支持数据持久化
 class Character {
-    constructor(message) {
+    static characters = new Map(); // 存储不同用户的角色
+
+    static create(message, senderId) {
+        // 检查是否已经存在这个发送者的角色
+        const existingCharacter = Character.characters.get(senderId);
+        if (existingCharacter) {
+            existingCharacter.updateMessage(message);
+            return existingCharacter;
+        }
+
+        // 如果角色不存在，创建新角色并保存到Map中
+        const character = new Character(message, senderId);
+        Character.characters.set(senderId, character);
+        return character;
+    }
+
+    constructor(message, senderId = sessionUserId) {
         if (!message) {
             throw new Error('Message is required');
         }
+
+        // 基本属性初始化
+        this.senderId = senderId;
+        this.messages = [message];
+        this.element = null;
+        this.bubble = null;
+
+        // 创建并初始化元素
+        this.initializeElement();
         
-        this.message = message;
-        
-        if (userCharacter) {
-            // 使用现有角色
-            this.element = userCharacter.element;
-            this.messages = userCharacter.messages;
-            this.messages.push(message);
-            this.showMessage(message);
-            this.saveToDatabase();
-        } else {
-            // 创建新角色
-            this.messages = [message];
-            this.element = this.createElement();
-            userCharacter = this;
-            
-            // 先加载数据，如果有的话
-            this.loadFromDatabase().then(() => {
-                if (!this.messages.includes(message)) {
-                    this.messages.push(message);
-                }
-                this.showMessage(message);
-                this.saveToDatabase();
-            });
+        // 显示初始消息
+        this.showMessage(message);
+    }
+
+    initializeElement() {
+        // 检查是否已存在该角色的元素
+        const existingElement = document.querySelector(`.character[data-sender-id="${this.senderId}"]`);
+        if (existingElement) {
+            this.element = existingElement;
+            return;
         }
+
+        // 创建新元素
+        const character = document.createElement('div');
+        character.classList.add('character');
+        character.setAttribute('data-sender-id', this.senderId);
+        
+        // 为不同用户设置不同的位置
+        const randomX = 100 + Math.random() * (window.innerWidth - 300);
+        const randomY = window.innerHeight * 0.5 + Math.random() * (window.innerHeight * 0.3);
+        
+        character.style.position = 'fixed';
+        character.style.left = `${randomX}px`;
+        character.style.top = `${randomY}px`;
+        
+        // 添加事件监听器
+        character.addEventListener('click', () => this.showHistory());
+        this.addDragability(character);
+        
+        document.querySelector('.character-container').appendChild(character);
+        this.element = character;
+    }
+
+    updateMessage(text) {
+        this.messages.push(text);
+        this.showMessage(text);
+    }
+
+    showMessage(text) {
+        // 移除现有气泡
+        if (this.bubble && this.bubble.parentNode) {
+            this.bubble.remove();
+        }
+
+        // 创建新的消息气泡
+        this.bubble = document.createElement('div');
+        this.bubble.classList.add('message-bubble');
+        this.bubble.textContent = text;
+        this.element.appendChild(this.bubble);
+
+        // 2秒后隐藏气泡
+        setTimeout(() => {
+            if (this.bubble) {
+                this.bubble.style.opacity = '0';
+                this.bubble.style.transform = 'translateY(-20px)';
+                setTimeout(() => {
+                    if (this.bubble && this.bubble.parentNode) {
+                        this.bubble.remove();
+                        this.bubble = null;
+                    }
+                }, 300);
+            }
+        }, 2000);
     }
 
     async loadFromDatabase() {
@@ -416,31 +488,6 @@ class Character {
             });
         } catch (error) {
             console.error('Error saving to database:', error);
-        }
-    }
-
-    createElement() {
-        try {
-            const character = document.createElement('div');
-            character.classList.add('character');
-            
-            // 设置初始位置
-            character.style.position = 'fixed';
-            character.style.left = '50%';
-            character.style.top = '70%';
-            character.style.transform = 'translate(-50%, -50%)';
-            
-            // 点击显示历史消息
-            character.addEventListener('click', () => this.showHistory());
-            
-            // 添加拖拽功能
-            this.addDragability(character);
-            
-            document.body.appendChild(character);
-            return character;
-        } catch (error) {
-            console.error('Error creating character:', error);
-            return null;
         }
     }
 
@@ -500,24 +547,6 @@ class Character {
 
         // 防止拖动时选中文本
         element.addEventListener('dragstart', (e) => e.preventDefault());
-    }
-
-    showMessage(text) {
-        const bubble = document.createElement('div');
-        bubble.classList.add('message-bubble');
-        bubble.textContent = text;
-        this.element.appendChild(bubble);
-        
-        // 只让气泡2秒后消失
-        setTimeout(() => {
-            bubble.style.opacity = '0';
-            bubble.style.transform = 'translateY(-20px)';
-            setTimeout(() => {
-                if (bubble && bubble.parentNode) {
-                    bubble.remove();
-                }
-            }, 300);
-        }, 2000);
     }
 
     showHistory() {
