@@ -549,42 +549,75 @@ class Character {
         let isDragging = false;
         let startX, startY;
         let startLeft, startTop;
+        let movedDistance = 0; // 添加移动距离跟踪
 
         element.addEventListener('mousedown', (e) => {
             if (e.button !== 0) return;
-            isDragging = true;
+            isDragging = false; // 初始设置为非拖动状态
+            movedDistance = 0; // 重置移动距离
             startX = e.clientX;
             startY = e.clientY;
+            
             const rect = element.getBoundingClientRect();
             startLeft = rect.left;
             startTop = rect.top;
+            
             element.style.cursor = 'grabbing';
-        });
+            element.style.transition = 'none';
+            element.style.animation = 'none';
+            element.classList.add('dragging');
 
-        document.addEventListener('mousemove', (e) => {
-            if (!isDragging) return;
-            
-            const dx = e.clientX - startX;
-            const dy = e.clientY - startY;
-            
-            let newLeft = startLeft + dx;
-            let newTop = startTop + dy;
-            
-            // 限制在窗口内
-            newLeft = Math.max(0, Math.min(window.innerWidth - 50, newLeft));
-            newTop = Math.max(0, Math.min(window.innerHeight - 50, newTop));
-            
-            element.style.left = `${newLeft}px`;
-            element.style.top = `${newTop}px`;
-        });
+            const moveHandler = (e) => {
+                const dx = e.clientX - startX;
+                const dy = e.clientY - startY;
+                
+                // 计算移动距离
+                movedDistance = Math.sqrt(dx * dx + dy * dy);
+                
+                // 如果移动距离超过阈值，标记为拖动
+                if (movedDistance > 5) {
+                    isDragging = true;
+                }
+                
+                if (!isDragging) return;
+                
+                const newLeft = startLeft + dx;
+                const newTop = startTop + dy;
+                
+                const maxX = window.innerWidth - element.offsetWidth;
+                const maxY = window.innerHeight - element.offsetHeight;
+                
+                const boundedLeft = Math.max(0, Math.min(maxX, newLeft));
+                const boundedTop = Math.max(0, Math.min(maxY, newTop));
+                
+                element.style.left = `${boundedLeft}px`;
+                element.style.top = `${boundedTop}px`;
+                
+                e.preventDefault();
+            };
 
-        document.addEventListener('mouseup', () => {
-            if (isDragging) {
-                isDragging = false;
+            const upHandler = () => {
                 element.style.cursor = 'grab';
-                // 保存新位置
-                this.savePosition();
-            }
+                element.style.transition = '';
+                element.style.animation = '';
+                element.classList.remove('dragging');
+                
+                // 只有在没有拖动时才显示历史记录
+                if (!isDragging && movedDistance < 5) {
+                    this.showHistory();
+                }
+                
+                // 只有在拖动时才保存位置
+                if (isDragging) {
+                    this.savePosition();
+                }
+                
+                document.removeEventListener('mousemove', moveHandler);
+                document.removeEventListener('mouseup', upHandler);
+            };
+
+            document.addEventListener('mousemove', moveHandler);
+            document.addEventListener('mouseup', upHandler);
         });
 
         element.addEventListener('dragstart', (e) => e.preventDefault());

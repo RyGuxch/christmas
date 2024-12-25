@@ -88,24 +88,7 @@ body {
 
 /* 音乐控制按钮 */
 .music-btn {
-    position: fixed;
-    right: 20px;
-    top: 20px;
-    background: none;
-    border: none;
-    font-size: 24px;
-    cursor: pointer;
-    color: #000000;
-    opacity: 0.9;
-    z-index: 100;
-    transition: all 0.3s ease;
-    padding: 10px;
-    border-radius: 50%;
-    width: 44px;
-    height: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: none;
 }
 
 /* 音乐图标样式 */
@@ -388,19 +371,27 @@ body {
     justify-content: center;
     animation: bounce 1s infinite ease-in-out;
     transition: all 0.3s ease;
+    will-change: transform, left, top;
+    touch-action: none;
+}
+
+.character.dragging {
+    animation: none !important;
+    transition: none !important;
+    cursor: grabbing;
 }
 
 .character:active {
     cursor: grabbing;
 }
 
-.character:hover {
-    transform: translateX(-50%) scale(1.1);
-}
-
 @keyframes bounce {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-5px); }
+    0%, 100% { 
+        transform: translateY(0); 
+    }
+    50% { 
+        transform: translateY(-5px); 
+    }
 }
 
 /* 消息气泡样式 */
@@ -564,38 +555,6 @@ body {
 
 .clear-all-btn:hover {
     background: #ff3333;
-}
-
-.admin-btn {
-    position: fixed;
-    top: 20px;
-    left: 20px;
-    padding: 8px 16px;
-    background-color: rgba(0, 0, 0, 0.1);
-    color: #000000;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    opacity: 0.5;
-    transition: all 0.3s ease;
-    font-size: 14px;
-    backdrop-filter: blur(5px);
-    z-index: 1000;
-    width: 120px;  /* 固定宽度 */
-    height: 36px;  /* 固定高度 */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    letter-spacing: 1px;
-    text-align: center;
-    white-space: nowrap;  /* 防止文字换行 */
-}
-
-.admin-btn:hover {
-    opacity: 0.8;
-    background-color: rgba(0, 0, 0, 0.15);
-    transform: scale(1.05);
-    text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
 }
 
 /* 添加星星图标的动画 */
@@ -833,4 +792,83 @@ body {
     font-size: 32px;
     cursor: grab;
     user-select: none;
+}
+
+/* 添加菜单栏样式 */
+.menu-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 48px;
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    z-index: 100;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.menu-bar .logo {
+    font-weight: bold;
+    margin-right: auto;
+    color: #333;
+    padding: 8px 16px;
+    font-size: 14px;
+}
+
+.menu-items {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.menu-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border: none;
+    background: none;
+    color: #333;
+    font-size: 14px;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.3s ease;
+    text-decoration: none;
+}
+
+.menu-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+.menu-btn:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+/* 修改雪花容器样式确保在菜单栏上方 */
+.snow-container {
+    z-index: 101;
+}
+
+/* 添加音乐播放状态样式 */
+#musicToggle.playing {
+    color: #007AFF;
+}
+
+#musicToggle.playing svg {
+    animation: musicRotate 3s infinite linear;
+}
+
+@keyframes musicRotate {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
 } 
