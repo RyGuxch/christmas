@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>圣诞快乐</title>
     <link rel="stylesheet" href="styles.css">
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+        import { getDatabase, ref, push, onChildAdded } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js";
+    </script>
 </head>
 <body>
     <div class="container">
@@ -60,5 +65,53 @@
         </div>
     </div>
     <script src="script.js"></script>
+    <script>
+        // Firebase 配置
+        const firebaseConfig = {
+            apiKey: "AIzaSyDLimspjrv6ChQpehQZmO9QVow6CYWB5e0",
+            authDomain: "christmas-22699.firebaseapp.com",
+            databaseURL: "https://christmas-22699-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "christmas-22699",
+            storageBucket: "christmas-22699.firebasestorage.app",
+            messagingSenderId: "737437196010",
+            appId: "1:737437196010:web:259763725831b81750c193",
+            measurementId: "G-1WMZ68LRJT"
+        };
+
+        // 初始化 Firebase
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+        const messagesRef = ref(database, 'messages');
+
+        // 发送消息
+        document.getElementById('sendMessage').addEventListener('click', function() {
+            const messageInput = document.getElementById('messageInput');
+            const message = messageInput.value.trim();
+            
+            if (message) {
+                // 将消息保存到 Firebase
+                push(messagesRef, {
+                    text: message,
+                    timestamp: Date.now()
+                });
+                messageInput.value = '';
+            }
+        });
+
+        // 监听新消息
+        onChildAdded(messagesRef, (snapshot) => {
+            const message = snapshot.val();
+            const messageHistory = document.querySelector('.message-history');
+            
+            // 创建新消息元素
+            const messageElement = document.createElement('div');
+            messageElement.className = 'message-item';
+            messageElement.textContent = message.text;
+            
+            // 添加到历史消息区域
+            messageHistory.appendChild(messageElement);
+            messageHistory.scrollTop = messageHistory.scrollHeight;
+        });
+    </script>
 </body>
 </html> 
