@@ -3,22 +3,107 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>圣诞快乐</title>
+    <title>新年快乐</title>
     <link rel="stylesheet" href="styles.css">
+    <style>
+        .menu-bar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.8);
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+        }
+
+        .logo {
+            font-size: 18px;
+            color: #1d1d1f;
+            font-weight: 600;
+        }
+
+        .menu-link {
+            padding: 8px 16px;
+            color: #1d1d1f;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 14px;
+        }
+
+        .menu-link:hover {
+            color: #2374e1;
+            transform: translateY(-1px);
+        }
+
+        .menu-link svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .new-year-decoration {
+            position: absolute;
+            left: 50%;
+            bottom: 20%;
+            transform: translateX(-50%);
+        }
+
+        .lantern {
+            width: 100px;
+            height: 100px;
+            background: #e4554d;
+            border-radius: 50%;
+            position: relative;
+        }
+
+        .message-input {
+            padding: 12px 16px;
+            background: #f5f5f7;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .message-input:focus {
+            outline: none;
+            background: #ffffff;
+            box-shadow: 0 0 0 2px rgba(35, 116, 225, 0.2);
+        }
+
+        .blessing-text {
+            position: fixed;
+            color: rgba(228, 85, 77, 0.6);
+            font-family: "Microsoft YaHei", sans-serif;
+            font-weight: bold;
+            text-shadow: 0 0 3px rgba(228, 85, 77, 0.3);
+            pointer-events: none;
+        }
+    </style>
 </head>
 <body>
     <div class="menu-bar">
-        <span class="logo">圣诞快乐</span>
+        <span class="logo">新年快乐</span>
         <div class="menu-items">
-            <button id="musicToggle" class="menu-btn">
+            <a href="#" id="musicToggle" class="menu-link">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M9 18V5l12-2v13"/>
                     <circle cx="6" cy="18" r="3"/>
                     <circle cx="18" cy="16" r="3"/>
                 </svg>
                 音乐
-            </button>
-            <a href="share.html" class="menu-btn">
+            </a>
+            <a href="share.html" class="menu-link">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
                     <polyline points="16 6 12 2 8 6"/>
@@ -26,24 +111,24 @@
                 </svg>
                 分享
             </a>
-            <a href="forum.html" class="menu-btn">
+            <a href="forum.html" class="menu-link">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
                 </svg>
                 论坛
             </a>
-            <a href="https://ryexu.tech" target="_blank" class="menu-btn">
+            <a href="https://ryexu.tech" target="_blank" class="menu-link">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
                 </svg>
                 访问博客
             </a>
-            <button id="adminClearBtn" class="menu-btn">
+            <a href="#" id="adminClearBtn" class="menu-link">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
                 </svg>
                 净化星愿
-            </button>
+            </a>
         </div>
     </div>
 
@@ -117,7 +202,7 @@
             <form class="message-input-wrapper" onsubmit="return false;">
                 <input type="text" 
                        id="messageInput" 
-                       placeholder="输入你的圣诞祝福..." 
+                       placeholder="输入你的新年祝福..." 
                        maxlength="50"
                        autocomplete="off">
                 <button type="button" id="sendMessage">
@@ -532,6 +617,43 @@
                 loadForumPosts();
             }
         });
+
+        // 修改雪花创建函数为祝福文字创建函数
+        function createSnowflake() {
+            const blessings = ['福', '禄', '寿', '喜', '春', '节', '年', '财', '安', '康', '乐', '祥'];
+            const blessing = document.createElement('div');
+            blessing.classList.add('blessing-text');
+            
+            // 随机选择祝福文字
+            blessing.textContent = blessings[Math.floor(Math.random() * blessings.length)];
+            
+            // 随机位置和大小
+            blessing.style.left = Math.random() * 100 + 'vw';
+            blessing.style.fontSize = Math.random() * 16 + 14 + 'px';
+            blessing.style.opacity = Math.random() * 0.4 + 0.3;
+            
+            document.querySelector('.snow-container').appendChild(blessing);
+            
+            // 设置动画
+            const duration = Math.random() * 4000 + 3000;
+            const rotation = (Math.random() - 0.5) * 180;
+            const horizontalMove = (Math.random() - 0.5) * 100;
+            
+            blessing.animate([
+                { transform: 'translate(0, -20px) rotate(0deg)', opacity: blessing.style.opacity },
+                { transform: `translate(${horizontalMove}px, ${window.innerHeight}px) rotate(${rotation}deg)`, opacity: 0 }
+            ], {
+                duration: duration,
+                easing: 'linear'
+            });
+            
+            setTimeout(() => {
+                blessing.remove();
+            }, duration);
+        }
+
+        // 调整创建频率
+        setInterval(createSnowflake, 300);
     </script>
 
     <!-- 添加音乐管理样式 -->

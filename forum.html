@@ -3,13 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>圣诞论坛 - 圣诞快乐</title>
+    <title>新年新愿</title>
     <link rel="stylesheet" href="styles.css">
     <style>
+        body {
+            margin: 0;
+            min-height: 100vh;
+            overflow-y: auto;
+            background: #ffffff;
+        }
+
         .forum-container {
             max-width: 800px;
-            margin: 100px auto 40px;
+            margin: 80px auto;
             padding: 20px;
+            padding-bottom: 100px;
             animation: pageEnter 0.8s ease-out;
         }
 
@@ -20,12 +28,14 @@
 
         .forum-header h1 {
             font-size: 28px;
-            color: #333;
+            color: #1d1d1f;
             margin-bottom: 16px;
+            font-weight: 600;
+            letter-spacing: -0.5px;
         }
 
         .forum-header p {
-            color: #666;
+            color: #86868b;
             font-size: 16px;
         }
 
@@ -33,19 +43,22 @@
             display: flex;
             flex-direction: column;
             gap: 20px;
+            margin-bottom: 60px;
         }
 
         .post-item {
             background: white;
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.03);
             transition: all 0.3s ease;
+            border: 1px solid #f5f5f7;
         }
 
         .post-item:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+            border-color: #e5e5e7;
         }
 
         .post-header {
@@ -110,31 +123,35 @@
             width: 56px;
             height: 56px;
             border-radius: 28px;
-            background: #000;
+            background: #2374e1;
             color: white;
             border: none;
             cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 4px 12px rgba(35, 116, 225, 0.2);
             transition: all 0.3s ease;
+            z-index: 1001;
+            transform: translateY(100px);
             display: flex;
             align-items: center;
             justify-content: center;
-            position: fixed !important;
-            transform: none !important;
-            top: auto !important;
-            left: auto !important;
         }
 
         .new-post-btn:hover {
-            transform: scale(1.1);
-        }
-
-        .new-post-btn {
-            opacity: 0;
+            transform: scale(1.05);
+            background: #1d68d0;
+            box-shadow: 0 6px 16px rgba(35, 116, 225, 0.3);
         }
 
         .new-post-btn.visible {
+            transform: translateY(0);
             opacity: 1;
+        }
+
+        .new-post-btn svg {
+            width: 24px;
+            height: 24px;
+            stroke: currentColor;
+            stroke-width: 2;
         }
 
         .new-post-modal {
@@ -147,9 +164,9 @@
             display: none;
             align-items: center;
             justify-content: center;
-            z-index: 1000;
+            z-index: 1002;
+            overflow-y: auto;
             backdrop-filter: blur(5px);
-            -webkit-backdrop-filter: blur(5px);
             animation: modalFadeIn 0.3s ease-out;
         }
 
@@ -251,14 +268,14 @@
         }
 
         .submit-post {
-            background: #000;
+            background: #2374e1;
             color: white;
-            padding: 8px 24px;
+            padding: 12px 24px;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             cursor: pointer;
             transition: all 0.2s ease;
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 500;
             min-width: 100px;
             height: 40px;
@@ -268,7 +285,7 @@
         }
 
         .submit-post:hover {
-            background: #333;
+            background: #1d68d0;
             transform: translateY(-1px);
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
@@ -295,12 +312,19 @@
 
         @media (max-width: 768px) {
             .forum-container {
-                margin-top: 60px;
+                margin: 60px auto;
                 padding: 16px;
             }
 
-            .post-item {
-                padding: 16px;
+            .new-post-btn {
+                right: 16px;
+                bottom: 16px;
+                width: 48px;
+                height: 48px;
+            }
+
+            .comments-section {
+                max-height: 300px;
             }
         }
 
@@ -447,6 +471,252 @@
         .comment-item:hover .delete-comment-btn {
             opacity: 1;
         }
+
+        /* 评论按钮和评论区 */
+        .comment-input-container {
+            display: flex;
+            gap: 8px;
+            margin-top: 16px;
+            padding: 16px;
+            background: #f5f5f7;
+            border-radius: 12px;
+        }
+
+        .comment-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            background: #ffffff;
+            color: #1d1d1f;
+            transition: all 0.3s ease;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+
+        .comment-input:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .comment-input-container button {
+            padding: 12px 20px;
+            background: #1d1d1f;
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .comment-input-container button:hover {
+            background: #2d2d2f;
+            transform: translateY(-1px);
+        }
+
+        .comment-input-container button:active {
+            transform: translateY(0);
+        }
+
+        /* 评论列表样式 */
+        .comments-section {
+            margin-top: 20px;
+            padding: 16px;
+            background: #f5f5f7;
+            border-radius: 12px;
+        }
+
+        .comment-item {
+            background: #ffffff;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            position: relative;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+
+        .comment-item:hover {
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .comment-author {
+            font-weight: 600;
+            color: #1d1d1f;
+            margin-bottom: 4px;
+            font-size: 14px;
+        }
+
+        .comment-content {
+            color: #424245;
+            margin-bottom: 8px;
+            line-height: 1.5;
+            font-size: 14px;
+        }
+
+        .comment-time {
+            font-size: 12px;
+            color: #86868b;
+        }
+
+        .delete-comment-btn {
+            position: absolute;
+            right: 12px;
+            top: 12px;
+            background: none;
+            border: none;
+            color: #ff3b30;
+            font-size: 12px;
+            cursor: pointer;
+            opacity: 0;
+            transition: all 0.2s ease;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        .comment-item:hover .delete-comment-btn {
+            opacity: 1;
+        }
+
+        .delete-comment-btn:hover {
+            background: #fff2f2;
+        }
+
+        /* 评论数量气泡 */
+        .comment-count {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 20px;
+            height: 20px;
+            padding: 0 6px;
+            background: #f5f5f7;
+            border-radius: 10px;
+            font-size: 12px;
+            font-weight: 500;
+            color: #1d1d1f;
+            transition: all 0.3s ease;
+        }
+
+        .comment-btn:hover .comment-count {
+            background: #e5e5e7;
+        }
+
+        /* 修复滚动问题 */
+        body {
+            margin: 0;
+            min-height: 100vh;
+            overflow-y: auto;
+            background: #ffffff;
+        }
+
+        .forum-container {
+            max-width: 800px;
+            margin: 80px auto;
+            padding: 20px;
+            padding-bottom: 100px;
+            animation: pageEnter 0.8s ease-out;
+        }
+
+        .post-list {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-bottom: 60px;
+        }
+
+        .new-post-btn {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            width: 56px;
+            height: 56px;
+            border-radius: 28px;
+            background: #2374e1;
+            color: white;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(35, 116, 225, 0.2);
+            transition: all 0.3s ease;
+            z-index: 1001;
+            transform: translateY(100px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .new-post-btn.visible {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .new-post-btn svg {
+            width: 24px;
+            height: 24px;
+            stroke: currentColor;
+            stroke-width: 2;
+        }
+
+        .new-post-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1002;
+            overflow-y: auto;
+            backdrop-filter: blur(5px);
+        }
+
+        .comments-section {
+            max-height: 400px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: #86868b #f5f5f7;
+        }
+
+        .comments-section::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .comments-section::-webkit-scrollbar-track {
+            background: #f5f5f7;
+            border-radius: 3px;
+        }
+
+        .comments-section::-webkit-scrollbar-thumb {
+            background: #86868b;
+            border-radius: 3px;
+        }
+
+        .comments-section::-webkit-scrollbar-thumb:hover {
+            background: #666666;
+        }
+
+        @media (max-width: 768px) {
+            .forum-container {
+                margin: 60px auto;
+                padding: 16px;
+            }
+
+            .new-post-btn {
+                right: 16px;
+                bottom: 16px;
+                width: 48px;
+                height: 48px;
+            }
+
+            .comments-section {
+                max-height: 300px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -459,8 +729,8 @@
 
     <div class="forum-container">
         <div class="forum-header">
-            <h1>圣诞论坛</h1>
-            <p>分享你的圣诞故事和祝福</p>
+            <h1>新年论坛</h1>
+            <p>分享你的新年愿望和期待</p>
         </div>
 
         <div class="post-list">
@@ -486,13 +756,13 @@
                 <div class="form-group">
                     <input 
                         type="text" 
-                        placeholder="输入你的昵称（可选）" 
+                        placeholder="输入你的昵称（新年新气象）" 
                         class="nickname-input"
                         maxlength="20"
                     >
                 </div>
                 <textarea 
-                    placeholder="分享你的圣诞故事..." 
+                    placeholder="分享你的新年愿望和期待..." 
                     required 
                     maxlength="500"
                     oninput="updateCharCount(this)"
