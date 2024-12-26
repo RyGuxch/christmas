@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (bellSound) {
             bellSound.play()
                 .catch(error => {
-                    console.error('铃铛播放失败:', error);
+                    console.error('铃���播放失败:', error);
                 });
         }
     }
@@ -396,7 +396,7 @@ class Character {
         
         // 动物
         '🐶', '🐱', '🐰', '🦊', '🐼', '🐨',
-        '🦁', '🐯', '🙈', '🦄', '🐲', '🐵',
+        '🦁', '🐯', '🪿', '🦄', '🐲', '🐵',
         
         // 节日相关
         '🎅', '🎅🏻', '🎅🏼', '🎅🏽', '🎅🏾', '🎅🏿',
@@ -408,8 +408,8 @@ class Character {
         '🤓', '😎', '🥸', '🤯', '🤠', '😈',
         
         // 幻想角色
-        '🧚‍♂️', '🧚‍♀️', '🧛‍♂️', '🧛‍♀️', '🐯', '🐽',
-        '🧞‍♂️', '🐸', '🐿️', '🐣', '👼', '👻'
+        '🧚‍♂️', '🧚‍♀️', '🧛‍♂️', '🧛‍♀️', '🧜‍♂️', '🧜‍♀️',
+        '🧞‍♂️', '🧞‍��️', '', '🧟‍♀️', '👼', '👻'
     ];
 
     static create(message, senderId) {
@@ -747,7 +747,7 @@ class Character {
                     e.stopPropagation();
                     if (confirm('确定要删除这条消息吗？')) {
                         try {
-                            // 从全局获取 Firebase 函数
+                            // 从全局��取 Firebase 函数
                             const { ref, get, remove } = await import('https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js');
                             
                             // 查找并删除消息
@@ -795,9 +795,53 @@ class Character {
             messageHistory.appendChild(messageElement);
         });
 
-        // 清空全部按钮只对当前用户显示
+        // 修改清空全部按钮的显示逻辑和功能
         if (this.senderId === sessionUserId) {
             clearAllBtn.style.display = 'block';
+            clearAllBtn.onclick = async () => {
+                if (confirm('确定要清空所有消息吗？此操作不可恢复！')) {
+                    try {
+                        // 导入所需的 Firebase 函数
+                        const { ref, get, remove, getDatabase } = await import('https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js');
+                        const database = getDatabase();
+                        const messagesRef = ref(database, 'messages');
+                        
+                        // 获取所有消息
+                        const snapshot = await get(messagesRef);
+                        if (snapshot.exists()) {
+                            const messages = snapshot.val();
+                            const deletePromises = [];
+                            
+                            // 找出属于当前用户的所有消息
+                            Object.entries(messages).forEach(([key, message]) => {
+                                if (message.senderId === this.senderId) {
+                                    deletePromises.push(remove(ref(database, `messages/${key}`)));
+                                }
+                            });
+                            
+                            // 等待所有删除操作完成
+                            await Promise.all(deletePromises);
+                            
+                            // 更新本地状态
+                            this.messages = [];
+                            messageHistory.innerHTML = '';
+                            
+                            // 如果没有消息了，关闭模态框并移除角色
+                            if (this.element && this.element.parentNode) {
+                                this.element.remove();
+                            }
+                            Character.characters.delete(this.senderId);
+                            modal.style.display = 'none';
+                            
+                            // 提示用户
+                            alert('消息已清空');
+                        }
+                    } catch (error) {
+                        console.error('清空消息失败:', error);
+                        alert('清空失败，请重试');
+                    }
+                }
+            };
         } else {
             clearAllBtn.style.display = 'none';
         }
@@ -949,7 +993,7 @@ class Character {
             };
         } catch (error) {
             console.error('打开私聊失败:', error);
-            alert('打开私聊失败，请重试');
+            alert('打开私聊失���，请重试');
         }
     }
 
@@ -1184,7 +1228,7 @@ function initializeMessageSystem() {
         }
     }
 
-    // ��听回车键
+    // 听回车键
     input.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
@@ -1240,7 +1284,7 @@ styles.textContent = `
 `;
 document.head.appendChild(styles); 
 
-// 添加菜单���控制
+// 添加菜单控制
 let menuTimeout;
 const menuBar = document.querySelector('.menu-bar');
 
@@ -1328,7 +1372,7 @@ async function loadMusicList() {
                         上传时间: ${new Date(data.uploadTime).toLocaleString()}
                     </div>
                 </div>
-                <button class="delete-btn" onclick="deleteMusic('${key}', '${data.name}')">删除</button>
+                <button class="delete-btn" onclick="deleteMusic('${key}', '${data.name}')">��除</button>
             `;
             musicList.appendChild(item);
         });
