@@ -239,7 +239,7 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        window.database = db; // 保持全局引用
+        window.database = db; // 保���全局引用
         const dbRef = ref(db);
         const messagesRef = ref(db, 'messages');
 
@@ -396,7 +396,7 @@
                             deleteBtn.className = 'delete-message';
                             deleteBtn.innerHTML = '×';
                             deleteBtn.onclick = async () => {
-                                if (confirm('确定要删除这条消息吗？')) {
+                                if (confirm('确定要删除这条消息吗���')) {
                                     await deleteMessage(message.key, message.senderId, false);
                                 }
                             };
@@ -831,5 +831,21 @@
             pointer-events: none;
         }
     </style>
+
+    <!-- 在 body 标签内，其他模态框后面添加 -->
+    <div class="private-chat-modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>私聊消息</h3>
+                <div class="chat-with"></div>
+                <button class="close-modal">×</button>
+            </div>
+            <div class="chat-messages"></div>
+            <div class="chat-input-container">
+                <input type="text" class="chat-input" placeholder="输入私聊消息..." maxlength="100">
+                <button class="send-chat">发送</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html> 

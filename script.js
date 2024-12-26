@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (bellSound) {
             bellSound.play()
                 .catch(error => {
-                    console.error('铃铛声播放失败:', error);
+                    console.error('铃铛播放失败:', error);
                 });
         }
     }
@@ -396,7 +396,7 @@ class Character {
         
         // 动物
         '🐶', '🐱', '🐰', '🦊', '🐼', '🐨',
-        '🦁', '🐯', '🐸', '🦄', '🐲', '🐉',
+        '🦁', '🐯', '����', '🦄', '🐲', '🐵',
         
         // 节日相关
         '🎅', '🎅🏻', '🎅🏼', '🎅🏽', '🎅🏾', '🎅🏿',
@@ -467,17 +467,22 @@ class Character {
             localStorage.setItem(`character_emoji_${this.senderId}`, character.textContent);
         }
 
-        // 添加事件监听器
+        // 修改点击事件处理
         character.addEventListener('click', (e) => {
+            // 阻止事件冒泡，防止重复触发
+            e.stopPropagation();
+            
             if (this.senderId === sessionUserId) {
                 if (e.button === 2) {
                     e.preventDefault();
                     this.showEmojiSelector(e);
                 } else {
-                    this.showHistory();
+                    // 显示自己的操作菜单
+                    this.showActionMenu(e, true);
                 }
-        } else {
-                this.showHistory();
+            } else {
+                // 显示其他用户操作菜单
+                this.showActionMenu(e, false);
             }
         });
         
@@ -702,34 +707,45 @@ class Character {
     }
 
     showHistory() {
+        // 确保先关闭其他可能打开的界面
+        const existingMenu = document.querySelector('.character-action-menu');
+        const privateChatModal = document.querySelector('.private-chat-modal');
+        if (existingMenu) {
+            existingMenu.remove();
+        }
+        if (privateChatModal) {
+            privateChatModal.style.display = 'none';
+        }
+
         const modal = document.querySelector('.history-modal');
-        const historyContainer = modal.querySelector('.message-history');
+        const messageHistory = modal.querySelector('.message-history');
         const clearAllBtn = modal.querySelector('.clear-all-btn');
         
         // 清空现有内容
-        historyContainer.innerHTML = '';
+        messageHistory.innerHTML = '';
         
         // 显示消息历史
         this.messages.forEach((msg, index) => {
-            const item = document.createElement('div');
-            item.classList.add('history-item');
+            const messageElement = document.createElement('div');
+            messageElement.className = 'message-item';
             
-            // 添加消息文本
+            // 创建消息文本容器
             const messageText = document.createElement('span');
+            messageText.className = 'message-text';
             messageText.textContent = msg;
-            item.appendChild(messageText);
+            messageElement.appendChild(messageText);
             
             // 只有当前用户可以删除自己的消息
             if (this.senderId === sessionUserId) {
-            const deleteBtn = document.createElement('button');
-            deleteBtn.classList.add('delete-message');
-            deleteBtn.innerHTML = '×';
-            deleteBtn.title = '删除此消息';
-            
-            // 删除单条消息
-            deleteBtn.addEventListener('click', async (e) => {
-                e.stopPropagation();
-                if (confirm('确定要删除这条消息吗？')) {
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'delete-message';
+                deleteBtn.innerHTML = '×';
+                deleteBtn.title = '删除此消息';
+                
+                // 删除单条消息
+                deleteBtn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    if (confirm('确定要删除这条消息吗？')) {
                         try {
                             // 从全局获取 Firebase 函数
                             const { ref, get, remove } = await import('https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js');
@@ -746,11 +762,12 @@ class Character {
                                         await remove(ref(window.database, `messages/${key}`));
                                         
                                         // 更新本地状态
-                    this.messages.splice(index, 1);
-                    item.style.animation = 'itemDisappear 0.3s ease-out forwards';
+                                        this.messages.splice(index, 1);
+                                        messageElement.style.animation = 'itemDisappear 0.3s ease-out forwards';
                                         
                                         setTimeout(() => {
-                                            item.remove();
+                                            messageElement.remove();
+                                            // 如果没有消息了，关闭模态框并移除角色
                                             if (this.messages.length === 0) {
                                                 if (this.element && this.element.parentNode) {
                                                     this.element.remove();
@@ -760,7 +777,7 @@ class Character {
                                             }
                                         }, 300);
                                         
-                                        return; // 删除成功后退出
+                                        return;
                                     }
                                 }
                             }
@@ -769,64 +786,22 @@ class Character {
                             console.error('删除失败:', error);
                             alert('删除失败，请重试');
                         }
-                }
-            });
-            
-            item.appendChild(deleteBtn);
+                    }
+                });
+                
+                messageElement.appendChild(deleteBtn);
             }
             
-            historyContainer.appendChild(item);
+            messageHistory.appendChild(messageElement);
         });
-        
-        // 清空按钮只对当前用户的消息可见
+
+        // 清空全部按钮只对当前用户显示
         if (this.senderId === sessionUserId) {
             clearAllBtn.style.display = 'block';
-        clearAllBtn.onclick = async () => {
-            if (confirm('确定要清空所有消息记录吗？此操作不可恢复！')) {
-                    try {
-                        // 从全局获取 Firebase 函数
-                        const { ref, get, remove } = await import('https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js');
-                        
-                        const messagesRef = ref(window.database, 'messages');
-                        const snapshot = await get(messagesRef);
-                        
-                        if (snapshot.exists()) {
-                            const messages = snapshot.val();
-                            const deletePromises = [];
-                            
-                            for (const [key, message] of Object.entries(messages)) {
-                                if (message.senderId === this.senderId) {
-                                    deletePromises.push(remove(ref(window.database, `messages/${key}`)));
-                                }
-                            }
-                            
-                            if (deletePromises.length > 0) {
-                                await Promise.all(deletePromises);
-                                
-                                // 更新本地状态
-                this.messages = [];
-                historyContainer.innerHTML = '';
-                modal.style.display = 'none';
-                                
-                                // 移除角色显示
-                                if (this.element && this.element.parentNode) {
-                                    this.element.remove();
-                                }
-                                Character.characters.delete(this.senderId);
-                            } else {
-                                throw new Error('没有找到可删除的消息');
-                            }
-                        }
-                    } catch (error) {
-                        console.error('清空失败:', error);
-                        alert('清空失败，请重试');
-                    }
-                }
-            };
         } else {
             clearAllBtn.style.display = 'none';
         }
-        
+
         modal.style.display = 'flex';
     }
 
@@ -887,6 +862,300 @@ class Character {
             return null;
         }
     }
+
+    // 添加私聊相关方法
+    async openPrivateChat() {
+        try {
+            // 确保用户已认证
+            const { getAuth, signInAnonymously } = await import('https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js');
+            const auth = getAuth();
+            
+            // 如果用户未登录，进行匿名登录
+            if (!auth.currentUser) {
+                await signInAnonymously(auth);
+            }
+
+            // 确保先关闭其他可能打开的界面
+            const existingMenu = document.querySelector('.character-action-menu');
+            const historyModal = document.querySelector('.history-modal');
+            if (existingMenu) {
+                existingMenu.remove();
+            }
+            if (historyModal) {
+                historyModal.style.display = 'none';
+            }
+
+            const modal = document.querySelector('.private-chat-modal');
+            const chatWith = modal.querySelector('.chat-with');
+            const messagesContainer = modal.querySelector('.chat-messages');
+            const input = modal.querySelector('.chat-input');
+            const sendButton = modal.querySelector('.send-chat');
+            
+            // 设置聊天对象信息
+            chatWith.textContent = `正在与 ${this.element.textContent} 聊天`;
+            
+            // 清空消息容器和输入框
+            messagesContainer.innerHTML = '';
+            input.value = '';
+            
+            // 加载历史消息
+            await this.loadPrivateMessages(messagesContainer);
+            
+            // 发送消息处理
+            const sendMessage = async () => {
+                const text = input.value.trim();
+                if (!text) return;
+                
+                try {
+                    await this.sendPrivateMessage(text);
+                    input.value = ''; // 清空输入框
+                    input.focus(); // 保持焦点
+                } catch (error) {
+                    console.error('发送私聊消息失败:', error);
+                    alert('发送失败，请重试');
+                }
+            };
+            
+            // 绑定发送按钮事件
+            sendButton.onclick = sendMessage;
+            
+            // 绑定回车发送
+            input.onkeypress = (e) => {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            };
+            
+            // 显示模态框
+            modal.style.display = 'flex';
+            input.focus();
+            
+            // 关闭按钮处理
+            const closeBtn = modal.querySelector('.close-modal');
+            closeBtn.onclick = () => {
+                modal.style.display = 'none';
+                // 移除消息监听器
+                if (this.privateMessageListener) {
+                    this.privateMessageListener();
+                    this.privateMessageListener = null;
+                }
+            };
+
+            // 点击模态框外部关闭
+            modal.onclick = (e) => {
+                if (e.target === modal) {
+                    closeBtn.click();
+                }
+            };
+        } catch (error) {
+            console.error('打开私聊失败:', error);
+            alert('打开私聊失败，请重试');
+        }
+    }
+
+    async sendPrivateMessage(text) {
+        if (!text.trim()) return;
+
+        try {
+            // 导入所需的 Firebase 函数
+            const { getDatabase, ref, push, serverTimestamp } = await import('https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js');
+            
+            // 获取数据库实例
+            const database = getDatabase();
+            
+            // 生成聊天ID
+            const chatId = this.getChatId();
+            
+            // 创建消息引用
+            const messageRef = ref(database, `private-messages/${chatId}`);
+            
+            // 发送消息
+            await push(messageRef, {
+                text: text.trim(),
+                senderId: sessionUserId,
+                timestamp: serverTimestamp(),
+                read: false
+            });
+            
+            // 添加未读通知
+            await this.addUnreadNotification();
+        } catch (error) {
+            console.error('发送私聊消息失败:', error);
+            throw error;
+        }
+    }
+
+    async loadPrivateMessages(container) {
+        try {
+            const chatId = this.getChatId();
+            const { getDatabase, ref, onValue } = await import('https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js');
+            
+            const database = getDatabase();
+            const chatRef = ref(database, `private-messages/${chatId}`);
+            
+            // 移除之前的监听器
+            if (this.privateMessageListener) {
+                this.privateMessageListener();
+            }
+            
+            // 添加新的监听器
+            this.privateMessageListener = onValue(chatRef, (snapshot) => {
+                const messages = snapshot.val();
+                
+                if (!messages) {
+                    container.innerHTML = '<div class="no-messages">暂无消息</div>';
+                    return;
+                }
+                
+                container.innerHTML = '';
+                Object.values(messages)
+                    .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0))
+                    .forEach(msg => {
+                        const messageElement = document.createElement('div');
+                        messageElement.className = `chat-message ${msg.senderId === sessionUserId ? 'sent' : 'received'}`;
+                        messageElement.textContent = msg.text;
+                        container.appendChild(messageElement);
+                    });
+                
+                // 滚动到最新消息
+                container.scrollTop = container.scrollHeight;
+            });
+        } catch (error) {
+            console.error('加载私聊消息失败:', error);
+            container.innerHTML = '<div class="error-message">加载消息失败，请重试</div>';
+        }
+    }
+
+    async addUnreadNotification() {
+        try {
+            const { ref, push, getDatabase, serverTimestamp } = await import('https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js');
+            const database = getDatabase();
+            const notificationRef = ref(database, `notifications/${this.senderId}`);
+            
+            await push(notificationRef, {
+                type: 'private_message',
+                from: sessionUserId,
+                timestamp: serverTimestamp(),
+                read: false
+            });
+        } catch (error) {
+            console.error('添加通知失败:', error);
+        }
+    }
+
+    getChatId() {
+        const ids = [sessionUserId, this.senderId].sort();
+        return `${ids[0]}_${ids[1]}`;
+    }
+
+    // 显示未读通知
+    showUnreadNotification() {
+        if (!this.element.querySelector('.chat-notification')) {
+            const notification = document.createElement('div');
+            notification.className = 'chat-notification';
+            this.element.appendChild(notification);
+        }
+    }
+
+    // 清除未读通知
+    clearUnreadNotification() {
+        const notification = this.element.querySelector('.chat-notification');
+        if (notification) {
+            notification.remove();
+        }
+    }
+
+    // 添加显示操作菜单的方法
+    showActionMenu(event, isCurrentUser) {
+        // 移除现有的菜单和可能存在的历史消息模态框
+        const existingMenu = document.querySelector('.character-action-menu');
+        const historyModal = document.querySelector('.history-modal');
+        if (existingMenu) {
+            existingMenu.remove();
+        }
+        if (historyModal) {
+            historyModal.style.display = 'none';
+        }
+
+        // 创建菜单
+        const menu = document.createElement('div');
+        menu.className = 'character-action-menu';
+        
+        // 根据是否是当前用户设置不同的菜单选项
+        const options = isCurrentUser ? [
+            {
+                text: '查看历史消息',
+                icon: '📜',
+                action: () => this.showHistory()
+            },
+            {
+                text: '更换表情',
+                icon: '😊',
+                action: (e) => this.showEmojiSelector(e)
+            }
+        ] : [
+            {
+                text: '查看历史消息',
+                icon: '📜',
+                action: () => this.showHistory()
+            },
+            {
+                text: '发起私聊',
+                icon: '💬',
+                action: () => this.openPrivateChat()
+            }
+        ];
+
+        options.forEach(option => {
+            const item = document.createElement('div');
+            item.className = 'menu-item';
+            item.innerHTML = `
+                <span class="menu-icon">${option.icon}</span>
+                <span class="menu-text">${option.text}</span>
+            `;
+            item.addEventListener('click', (e) => {
+                // 阻止事件冒泡
+                e.stopPropagation();
+                // 先移除菜单
+                menu.remove();
+                // 延迟执行操作，确保菜单已完全关闭
+                setTimeout(() => {
+                    option.action(e);
+                }, 50);
+            });
+            menu.appendChild(item);
+        });
+
+        // 设置菜单位置
+        const rect = this.element.getBoundingClientRect();
+        menu.style.position = 'fixed';
+        menu.style.left = `${rect.left}px`;
+        menu.style.top = `${rect.top - menu.offsetHeight - 10}px`;
+
+        // 确保单不会超出屏幕边界
+        const menuRect = menu.getBoundingClientRect();
+        if (menuRect.right > window.innerWidth) {
+            menu.style.left = `${window.innerWidth - menuRect.width - 10}px`;
+        }
+        if (menuRect.top < 0) {
+            menu.style.top = `${rect.bottom + 10}px`;
+        }
+
+        // 添加到页面
+        document.body.appendChild(menu);
+
+        // 点击其他地方关闭菜单
+        const closeMenu = (e) => {
+            if (!menu.contains(e.target) && e.target !== this.element) {
+                menu.remove();
+                document.removeEventListener('click', closeMenu);
+            }
+        };
+        
+        setTimeout(() => {
+            document.addEventListener('click', closeMenu);
+        }, 0);
+    }
 }
 
 // 简化消息系统初始化
@@ -915,7 +1184,7 @@ function initializeMessageSystem() {
         }
     }
 
-    // 监听回车键
+    // ��听回车键
     input.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
@@ -971,7 +1240,7 @@ styles.textContent = `
 `;
 document.head.appendChild(styles); 
 
-// 添加菜单栏控制
+// 添加菜单���控制
 let menuTimeout;
 const menuBar = document.querySelector('.menu-bar');
 
@@ -1007,7 +1276,7 @@ menuBar.addEventListener('mouseleave', () => {
     }, 500);
 });
 
-// 初始状态设置为显示
+// 初始状态设为显示
 menuBar.classList.remove('hidden');
 
 // 3秒后自动隐藏
@@ -1086,3 +1355,14 @@ async function deleteMusic(key, name) {
         }
     }
 } 
+
+// 在页面加载时初始化匿名认证
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const { getAuth, signInAnonymously } = await import('https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js');
+        const auth = getAuth();
+        await signInAnonymously(auth);
+    } catch (error) {
+        console.error('初始化认证失败:', error);
+    }
+}); 
