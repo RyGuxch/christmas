@@ -1014,3 +1014,75 @@ menuBar.classList.remove('hidden');
 setTimeout(() => {
     menuBar.classList.add('hidden');
 }, 2000); 
+
+// 添加音乐管理功能
+function initMusicManagement() {
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const tabs = document.querySelectorAll('.tab-content');
+    
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const tabName = btn.dataset.tab;
+            
+            // 更新标签按钮状态
+            tabBtns.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            // 更新内容显示
+            tabs.forEach(tab => {
+                tab.style.display = tab.id === `${tabName}Tab` ? 'block' : 'none';
+            });
+            
+            // 如果切换到音乐标签，加载音乐列表
+            if (tabName === 'music') {
+                loadMusicList();
+            }
+        });
+    });
+}
+
+async function loadMusicList() {
+    const musicList = document.querySelector('.music-list');
+    const snapshot = await get(ref(database, 'music'));
+    
+    if (snapshot.exists()) {
+        musicList.innerHTML = '';
+        const music = snapshot.val();
+        
+        Object.entries(music).forEach(([key, data]) => {
+            const item = document.createElement('div');
+            item.className = 'music-item';
+            item.innerHTML = `
+                <div class="music-info">
+                    <div class="music-name">${data.name}</div>
+                    <div class="music-meta">
+                        上传时间: ${new Date(data.uploadTime).toLocaleString()}
+                    </div>
+                </div>
+                <button class="delete-btn" onclick="deleteMusic('${key}', '${data.name}')">删除</button>
+            `;
+            musicList.appendChild(item);
+        });
+    } else {
+        musicList.innerHTML = '<div class="no-music">暂无音乐</div>';
+    }
+}
+
+async function deleteMusic(key, name) {
+    if (confirm(`确定要删除音乐 "${name}" 吗？`)) {
+        try {
+            // 删除存储中的文件
+            const storage = getStorage();
+            await deleteObject(ref(storage, `music/${name}`));
+            
+            // 删除数据库中的记录
+            await remove(ref(database, `music/${key}`));
+            
+            // 重新加载音乐列表
+            loadMusicList();
+        } catch (error) {
+            console.error('删除失败:', error);
+            alert('删除失败，请重试');
+        }
+    }
+} 

@@ -26,6 +26,12 @@
                 </svg>
                 分享
             </a>
+            <a href="forum.html" class="menu-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                </svg>
+                论坛
+            </a>
             <a href="https://ryexu.tech" target="_blank" class="menu-btn">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
@@ -83,7 +89,27 @@
                     <h3>管理员面板</h3>
                     <button class="close-admin-panel">×</button>
                 </div>
-                <div class="admin-messages-container"></div>
+                <div class="admin-tabs">
+                    <button class="tab-btn active" onclick="switchTab('messagesTab')">消息管理</button>
+                    <button class="tab-btn" onclick="switchTab('musicTab')">音乐管理</button>
+                    <button class="tab-btn" onclick="switchTab('forumTab')">帖子管理</button>
+                </div>
+                <div class="tab-content" id="messagesTab">
+                    <div class="admin-messages-container"></div>
+                </div>
+                <div class="tab-content" id="musicTab" style="display: none;">
+                    <div class="music-list"></div>
+                </div>
+                <div class="tab-content" id="forumTab" style="display: none;">
+                    <div class="forum-controls">
+                        <div class="forum-stats">
+                            <p>总帖子数：<span id="postCount">0</span></p>
+                        </div>
+                        <div class="forum-list">
+                            <!-- 帖子列表将动态加载 -->
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -111,7 +137,8 @@
     <!-- Firebase 相关代码 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
-        import { getDatabase, ref, push, onChildAdded, remove, onValue, get, update } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js";
+        import { getDatabase, ref, push, onChildAdded, remove, onValue, get, child, update } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js";
+        import { getAuth } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
 
         // Firebase 配置
         const firebaseConfig = {
@@ -119,16 +146,117 @@
             authDomain: "christmas-22699.firebaseapp.com",
             databaseURL: "https://christmas-22699-default-rtdb.asia-southeast1.firebasedatabase.app",
             projectId: "christmas-22699",
-            storageBucket: "christmas-22699.firebasestorage.app",
+            storageBucket: "christmas-22699.appspot.com",
             messagingSenderId: "737437196010",
             appId: "1:737437196010:web:259763725831b81750c193",
             measurementId: "G-1WMZ68LRJT"
         };
 
-        // 初始化 Firebase
         const app = initializeApp(firebaseConfig);
-        window.database = getDatabase(app);
-        const messagesRef = ref(window.database, 'messages');
+        const db = getDatabase(app);
+        window.database = db; // 保持全局引用
+        const dbRef = ref(db);
+        const messagesRef = ref(db, 'messages');
+
+        // 确保在页面加载时初始化角色
+        document.addEventListener('DOMContentLoaded', () => {
+            // 获取已有的消息并创建角色
+            get(messagesRef).then((snapshot) => {
+                const messages = snapshot.val();
+                if (messages) {
+                    Object.entries(messages)
+                        .map(([key, message]) => ({ key, ...message }))
+                        .sort((a, b) => a.timestamp - b.timestamp)
+                        .forEach(message => {
+                            if (!processedMessages.has(message.key)) {
+                                processedMessages.add(message.key);
+                                // 创建角色
+                                if (!Character.characters.has(message.senderId)) {
+                                    Character.create(message.text, message.senderId);
+                                }
+                            }
+                        });
+                }
+            });
+        });
+
+        // 监听新消息
+        onChildAdded(messagesRef, (snapshot) => {
+            const message = snapshot.val();
+            if (!processedMessages.has(snapshot.key)) {
+                processedMessages.add(snapshot.key);
+                // 处理消息显示逻辑
+                if (!Character.characters.has(message.senderId)) {
+                    Character.create(message.text, message.senderId);
+                } else {
+                    const character = Character.characters.get(message.senderId);
+                    character.updateMessage(message.text);
+                }
+            }
+        });
+
+        // 加载论坛帖子
+        function loadForumPosts() {
+            get(child(dbRef, 'forum-posts')).then((snapshot) => {
+                const posts = snapshot.val();
+                const forumList = document.querySelector('.forum-list');
+                const postCount = document.getElementById('postCount');
+                
+                // 正确计算帖子数量
+                const count = posts ? Object.keys(posts).length : 0;
+                postCount.textContent = count;
+                
+                forumList.innerHTML = '';
+                
+                if (posts) {
+                    const postsArray = Object.entries(posts)
+                        .map(([id, post]) => ({id, ...post}))
+                        .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+                    postsArray.forEach(post => {
+                        const postElement = document.createElement('div');
+                        postElement.className = 'forum-item';
+                        
+                        const date = post.timestamp ? new Date(post.timestamp) : new Date();
+                        const dateStr = date.toLocaleString();
+                        
+                        postElement.innerHTML = `
+                            <div class="forum-header">
+                                <span class="forum-author">${post.author}</span>
+                                <span class="forum-time">${dateStr}</span>
+                            </div>
+                            <div class="forum-content">${post.content}</div>
+                            <div class="forum-actions">
+                                <button class="delete-post-btn" onclick="deletePost('${post.id}')">
+                                    删除帖子
+                                </button>
+                            </div>
+                        `;
+                        
+                        forumList.appendChild(postElement);
+                    });
+                    console.log(`加载了 ${count} 个帖子`);
+                }
+            }).catch((error) => {
+                console.error("加载帖子失败:", error);
+            });
+        }
+
+        // 删除帖子函数
+        window.deletePost = async (postId) => {
+            if (confirm('确定要删除这条帖子吗？此操作不可撤销。')) {
+                try {
+                    const postRef = ref(db, `forum-posts/${postId}`);
+                    await remove(postRef);
+                    console.log('帖子删除成功:', postId);
+                    // 重新加载帖子列表
+                    loadForumPosts();
+                } catch (error) {
+                    console.error('删除失败:', error);
+                    alert('删除失败，请重试');
+                }
+            }
+        };
 
         // 获取 DOM 元素
         const messageInput = document.getElementById('messageInput');
@@ -141,24 +269,20 @@
         // 在 Firebase 初始化后，添加一个变量来跟踪已显示的消息
         const displayedMessages = new Set();
 
-        // 修改消息删除函数
-        window.deleteMessage = async (messageKey, senderId, isAdmin = false) => {
-            try {
-                if (senderId === sessionUserId || isAdmin) {
-                    await remove(ref(window.database, `messages/${messageKey}`));
-                    displayedMessages.delete(messageKey);
-                    processedMessages.delete(messageKey); // 确保消息能被重新处理
-                    
-                    // 如果不是管理员操作，显示用户历史记录
-                    if (!isAdmin) {
-                        showUserHistory(senderId);
+        // 恢复消息相关函数
+        window.deleteMessage = async (messageId, userId, skipConfirm = false) => {
+            if (skipConfirm || confirm('确定要删除这条消息吗？')) {
+                try {
+                    const messageRef = ref(db, `messages/${messageId}`);
+                    await remove(messageRef);
+                    // 从 DOM 中移除消息
+                    const messageElement = document.querySelector(`[data-message-id="${messageId}"]`);
+                    if (messageElement) {
+                        messageElement.remove();
                     }
-                    return true;
+                } catch (error) {
+                    console.error('删除消息失败:', error);
                 }
-                return false;
-            } catch (error) {
-                console.error('删除失败:', error);
-                return false;
             }
         };
 
@@ -376,6 +500,214 @@
                 }
             }
         };
+
+        // 修改切换标签函数
+        window.switchTab = (tabId) => {
+            // 隐藏所有标签内容
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.style.display = 'none';
+            });
+
+            // 移除所有标签按钮的活动状态
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // 显示选中的标签内容
+            document.getElementById(tabId).style.display = 'block';
+
+            // 设置选中标签按钮的活动状态
+            document.querySelector(`button[onclick="switchTab('${tabId}')"]`).classList.add('active');
+            
+            // 如果切换到论坛标签，加载帖子
+            if (tabId === 'forumTab') {
+                loadForumPosts();
+            }
+        };
+
+        // 确保在页面加载时初始化论坛帖子列表
+        document.addEventListener('DOMContentLoaded', () => {
+            // 如果当前是论坛标签，加载帖子
+            if (document.getElementById('forumTab').style.display !== 'none') {
+                loadForumPosts();
+            }
+        });
     </script>
+
+    <!-- 添加音乐管理样式 -->
+    <style>
+        .admin-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        .tab-btn {
+            padding: 8px 16px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn.active {
+            opacity: 1;
+            border-bottom: 2px solid #000;
+        }
+
+        .music-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .music-info {
+            flex: 1;
+        }
+
+        .music-name {
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .music-meta {
+            font-size: 12px;
+            color: #666;
+        }
+
+        /* 帖子管理样式 */
+        .forum-controls {
+            padding: 16px;
+        }
+
+        .forum-stats {
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #eee;
+            color: #666;
+        }
+
+        .forum-list {
+            max-height: 400px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .forum-item {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 16px;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+
+        .forum-item:hover {
+            background: #f0f1f2;
+        }
+
+        .forum-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .forum-author {
+            font-weight: 500;
+            color: #333;
+        }
+
+        .forum-time {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .forum-content {
+            color: #444;
+            margin-bottom: 12px;
+            line-height: 1.5;
+            word-break: break-word;
+        }
+
+        .forum-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .delete-post-btn {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s ease;
+        }
+
+        .delete-post-btn:hover {
+            background: #b91c1c;
+        }
+
+        .character-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 120px;
+            z-index: 10;
+            pointer-events: none;
+            overflow: visible;
+        }
+
+        .character {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            font-size: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: left 0.5s ease;
+            pointer-events: auto;
+            z-index: 1000;
+            bottom: 20px;
+        }
+
+        .character.jump {
+            animation: jump 0.5s ease;
+        }
+
+        @keyframes jump {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-30px); }
+        }
+
+        .message-bubble {
+            position: absolute;
+            top: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.9);
+            padding: 8px 12px;
+            border-radius: 12px;
+            font-size: 14px;
+            white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            opacity: 1;
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
+    </style>
 </body>
 </html> 

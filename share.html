@@ -246,6 +246,29 @@
                 padding: 20px;
             }
         }
+
+        .upload-status {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #666;
+            min-height: 20px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: #eee;
+            border-radius: 2px;
+            margin-top: 8px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: #000;
+            width: 0;
+            transition: width 0.3s ease;
+        }
     </style>
 </head>
 <body>
@@ -289,8 +312,49 @@
                     <img src="qr-ryefun.png" alt="ryefun.site 二维码" />
                 </div>
             </div>
+
+            <div class="share-card">
+                <div class="share-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 18V5l12-2v13"/>
+                        <circle cx="6" cy="18" r="3"/>
+                        <circle cx="18" cy="16" r="3"/>
+                    </svg>
+                </div>
+                <h3 class="share-title">分享音乐</h3>
+                <p class="share-description">上传你喜欢的圣诞音乐</p>
+                <input type="file" id="musicUpload" accept="audio/*" style="display: none;">
+                <button class="share-button" onclick="document.getElementById('musicUpload').click()">
+                    选择音乐
+                </button>
+                <div id="uploadStatus" class="upload-status"></div>
+            </div>
         </div>
     </div>
+
+    <script type="module">
+        // Firebase 配置
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDLimspjrv6ChQpehQZmO9QVow6CYWB5e0",
+            authDomain: "christmas-22699.firebaseapp.com",
+            databaseURL: "https://christmas-22699-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "christmas-22699",
+            storageBucket: "christmas-22699.appspot.com",
+            messagingSenderId: "737437196010",
+            appId: "1:737437196010:web:259763725831b81750c193",
+            measurementId: "G-1WMZ68LRJT"
+        };
+
+        // 初始化 Firebase
+        const app = initializeApp(firebaseConfig);
+        // 初始化匿名认证
+        const auth = getAuth(app);
+        await signInAnonymously(auth);
+        window.app = app;
+    </script>
 
     <script>
         function copyLink() {
@@ -306,6 +370,92 @@
                 alert('复制失败，请手动复制链接');
             });
         }
+    </script>
+
+    <script type="module">
+        // 获取已初始化的 Firebase 实例
+        const app = window.app;
+        import { getStorage, ref as storageRef, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-storage.js";
+        import { getDatabase, ref as dbRef, push, remove } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js";
+
+        // 确保用户ID可用
+        const sessionUserId = localStorage.getItem('christmasUserId') || 'anonymous';
+
+        const musicUpload = document.getElementById('musicUpload');
+        const uploadStatus = document.getElementById('uploadStatus');
+
+        musicUpload.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            try {
+                // 生成唯一的文件名
+                const timestamp = Date.now();
+                const uniqueFileName = `${timestamp}_${file.name}`;
+                
+                const storage = getStorage(app);
+                const storageReference = storageRef(storage, `music/${uniqueFileName}`);
+
+                // 检查文件大小
+                if (file.size > 10 * 1024 * 1024) {
+                    alert('文件大小不能超过10MB');
+                    return;
+                }
+
+                // 创建进度条
+                uploadStatus.innerHTML = `
+                    <div>准备上传...</div>
+                    <div class="progress-bar">
+                        <div class="progress-bar-fill"></div>
+                    </div>
+                `;
+
+                const uploadTask = uploadBytesResumable(storageReference, file);
+
+                uploadTask.on('state_changed',
+                    (snapshot) => {
+                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                        document.querySelector('.progress-bar-fill').style.width = progress + '%';
+                        uploadStatus.firstElementChild.textContent = `上传中... ${Math.round(progress)}%`;
+                    },
+                    (error) => {
+                        console.error('Upload error:', error);
+                        let errorMessage = '上传失败，请重试';
+                        switch (error.code) {
+                            case 'storage/unauthorized':
+                                errorMessage = '没有权限上传文件';
+                                break;
+                            case 'storage/canceled':
+                                errorMessage = '上传已取消';
+                                break;
+                            case 'storage/unknown':
+                                errorMessage = '发生未知错误';
+                                break;
+                        }
+                        uploadStatus.innerHTML = errorMessage;
+                    },
+                    async () => {
+                        try {
+                            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                            const db = getDatabase(app);
+                            await push(dbRef(db, 'music'), {
+                                name: file.name,
+                                url: downloadURL,
+                                uploadTime: Date.now(),
+                                uploaderId: sessionUserId
+                            });
+                            uploadStatus.innerHTML = '上传成功！';
+                        } catch (error) {
+                            console.error('Database error:', error);
+                            uploadStatus.innerHTML = '保存失败，请重试';
+                        }
+                    }
+                );
+            } catch (error) {
+                console.error('Initial error:', error);
+                uploadStatus.innerHTML = '初始化失败，请重试';
+            }
+        });
     </script>
 </body>
 </html> 

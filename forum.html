@@ -1,0 +1,993 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>圣诞论坛 - 圣诞快乐</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .forum-container {
+            max-width: 800px;
+            margin: 100px auto 40px;
+            padding: 20px;
+            animation: pageEnter 0.8s ease-out;
+        }
+
+        .forum-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .forum-header h1 {
+            font-size: 28px;
+            color: #333;
+            margin-bottom: 16px;
+        }
+
+        .forum-header p {
+            color: #666;
+            font-size: 16px;
+        }
+
+        .post-list {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .post-item {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .post-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .post-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .post-author {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .author-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #f0f0f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .post-meta {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .post-content {
+            margin-bottom: 16px;
+            line-height: 1.6;
+        }
+
+        .post-actions {
+            display: flex;
+            gap: 16px;
+        }
+
+        .action-btn {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 12px;
+            border: none;
+            background: none;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .action-btn:hover {
+            color: #000;
+        }
+
+        .new-post-btn {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            width: 56px;
+            height: 56px;
+            border-radius: 28px;
+            background: #000;
+            color: white;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: fixed !important;
+            transform: none !important;
+            top: auto !important;
+            left: auto !important;
+        }
+
+        .new-post-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .new-post-btn {
+            opacity: 0;
+        }
+
+        .new-post-btn.visible {
+            opacity: 1;
+        }
+
+        .new-post-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            animation: modalFadeIn 0.3s ease-out;
+        }
+
+        @keyframes modalFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            animation: modalContentSlideIn 0.3s ease-out;
+        }
+
+        @keyframes modalContentSlideIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid #eee;
+            padding: 0 4px;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s ease;
+        }
+
+        .close-modal:hover {
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .post-form {
+            padding: 0;
+        }
+
+        .post-form textarea {
+            width: 100%;
+            height: 120px;
+            padding: 16px;
+            border: 2px solid #eee;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            resize: vertical;
+            font-size: 16px;
+            line-height: 1.5;
+            transition: all 0.3s ease;
+            font-family: inherit;
+            box-sizing: border-box;
+        }
+
+        .post-form textarea:focus {
+            outline: none;
+            border-color: #000;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .post-form textarea::placeholder {
+            color: #999;
+        }
+
+        .submit-post {
+            background: #000;
+            color: white;
+            padding: 8px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 16px;
+            font-weight: 500;
+            min-width: 100px;
+            height: 40px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .submit-post:hover {
+            background: #333;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .submit-post:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .form-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 16px;
+            padding: 0 4px;
+        }
+
+        .char-count {
+            color: #666;
+            font-size: 14px;
+        }
+
+        @media (max-width: 768px) {
+            .forum-container {
+                margin-top: 60px;
+                padding: 16px;
+            }
+
+            .post-item {
+                padding: 16px;
+            }
+        }
+
+        /* 美化返回按钮 */
+        .back-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 20px;
+            color: #333;
+            text-decoration: none;
+            font-size: 14px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+            z-index: 100;
+        }
+
+        .back-button:hover {
+            background: rgba(255, 255, 255, 1);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .back-button svg {
+            width: 16px;
+            height: 16px;
+            stroke: currentColor;
+            transition: transform 0.3s ease;
+        }
+
+        .back-button:hover svg {
+            transform: translateX(-2px);
+        }
+
+        @media (max-width: 768px) {
+            .back-button {
+                top: 16px;
+                left: 16px;
+                padding: 6px 12px;
+                font-size: 12px;
+            }
+
+            .back-button svg {
+                width: 14px;
+                height: 14px;
+            }
+        }
+
+        .delete-btn {
+            background: none;
+            border: none;
+            padding: 4px;
+            margin-left: 8px;
+            cursor: pointer;
+            color: #666;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .delete-btn:hover {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .post-meta {
+            display: flex;
+            align-items: center;
+        }
+
+        /* 点赞和评论样式 */
+        .like-btn.liked {
+            color: #dc2626;
+        }
+        
+        .like-btn.liked svg {
+            fill: currentColor;
+        }
+        
+        .comments-section {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #eee;
+        }
+        
+        .comment-input-container {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        
+        .comment-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 2px solid #eee;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        .comment-input:focus {
+            outline: none;
+            border-color: #000;
+        }
+        
+        .comment-item {
+            padding: 12px;
+            border-bottom: 1px solid #f0f0f0;
+            position: relative;
+        }
+        
+        .comment-author {
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+        
+        .comment-time {
+            font-size: 12px;
+            color: #666;
+            margin-top: 4px;
+        }
+        
+        .delete-comment-btn {
+            position: absolute;
+            right: 12px;
+            top: 12px;
+            background: none;
+            border: none;
+            color: #dc2626;
+            cursor: pointer;
+            font-size: 12px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        .comment-item:hover .delete-comment-btn {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-button" title="返回主页">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M15 18l-6-6 6-6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        返回主页
+    </a>
+
+    <div class="forum-container">
+        <div class="forum-header">
+            <h1>圣诞论坛</h1>
+            <p>分享你的圣诞故事和祝福</p>
+        </div>
+
+        <div class="post-list">
+            <!-- 帖子列表将通过 JavaScript 动态加载 -->
+        </div>
+
+        <button class="new-post-btn" onclick="showNewPostModal()">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+        </button>
+    </div>
+
+    <!-- 新帖子模态框 -->
+    <div class="new-post-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">发布新帖子</h3>
+                <button class="close-modal" onclick="hideNewPostModal()">×</button>
+            </div>
+            <form class="post-form" onsubmit="submitPost(event)">
+                <div class="form-group">
+                    <input 
+                        type="text" 
+                        placeholder="输入你的昵称（可选）" 
+                        class="nickname-input"
+                        maxlength="20"
+                    >
+                </div>
+                <textarea 
+                    placeholder="分享你的圣诞故事..." 
+                    required 
+                    maxlength="500"
+                    oninput="updateCharCount(this)"
+                ></textarea>
+                <div class="form-footer">
+                    <div class="char-count">还可以输入 <span>500</span> 个字</div>
+                    <button type="submit" class="submit-post">发布</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        // 页面加载完成后显示按钮
+        document.addEventListener('DOMContentLoaded', () => {
+            const newPostBtn = document.querySelector('.new-post-btn');
+            // 确保按钮在正确位置后再显示
+            requestAnimationFrame(() => {
+                newPostBtn.classList.add('visible');
+            });
+        });
+
+        // Firebase 配置
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+        import { getDatabase, ref, push, onChildAdded, serverTimestamp, update, remove, child, get, onValue } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDLimspjrv6ChQpehQZmO9QVow6CYWB5e0",
+            authDomain: "christmas-22699.firebaseapp.com",
+            databaseURL: "https://christmas-22699-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "christmas-22699",
+            storageBucket: "christmas-22699.appspot.com",
+            messagingSenderId: "737437196010",
+            appId: "1:737437196010:web:259763725831b81750c193",
+            measurementId: "G-1WMZ68LRJT"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getDatabase(app);
+        const postsRef = ref(db, 'forum-posts');
+
+        // 添加认证函数
+        async function ensureAuth() {
+            try {
+                const auth = getAuth();
+                let user = auth.currentUser;
+                
+                if (!user) {
+                    // 如果用户未登录，进行匿名登录
+                    const result = await signInAnonymously(auth);
+                    user = result.user;
+                }
+                
+                // 保存用户ID到localStorage
+                const uid = user.uid;
+                localStorage.setItem('currentUserUid', uid);
+                window.currentUserUid = uid;
+                return uid;
+            } catch (error) {
+                console.error('认证失败:', error);
+                throw new Error('认证失败，请重试');
+            }
+        }
+
+        // 将函数暴露到全局作用域
+        window.showNewPostModal = () => {
+            document.querySelector('.new-post-modal').style.display = 'flex';
+        };
+
+        window.hideNewPostModal = () => {
+            document.querySelector('.new-post-modal').style.display = 'none';
+        };
+
+        window.submitPost = async (event) => {
+            event.preventDefault();
+            const form = event.target;
+            const nickname = form.querySelector('.nickname-input').value.trim();
+            const content = form.querySelector('textarea').value;
+            
+            if (!content.trim()) {
+                alert('请输入内容');
+                return;
+            }
+            
+            const submitBtn = form.querySelector('.submit-post');
+            submitBtn.disabled = true;
+            submitBtn.textContent = '发布中...';
+            
+            try {
+                const uid = await ensureAuth();
+                
+                // 如果用户输入了昵称，保存到 localStorage
+                if (nickname) {
+                    localStorage.setItem('christmasNickname', nickname);
+                }
+                
+                // 获取用户昵称
+                const author = nickname || localStorage.getItem('christmasNickname') || '匿名用户';
+
+                const newPostRef = await push(postsRef, {
+                    content,
+                    author,
+                    timestamp: serverTimestamp(),
+                    uid: uid,
+                    postId: null,  // 初始设置为 null
+                    likes: 0,      // 添加点赞计数
+                    comments: {},  // 添加评论对象
+                    likedBy: {}    // 记录谁点过赞
+                });
+                
+                // 更新帖子的 ID
+                const postId = newPostRef.key;
+                await update(child(postsRef, newPostRef.key), {
+                    postId: postId
+                });
+                console.log('帖子创建成功，ID:', postId);
+
+                form.reset();
+                hideNewPostModal();
+                alert('发布成功！');
+            } catch (error) {
+                console.error('发布失败:', error);
+                alert('发布失败，请重试');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '发布';
+            }
+        };
+
+        // 删除帖子函数
+        window.deletePost = async (postId, postUid) => {
+            try {
+                const uid = await ensureAuth();
+                if (uid !== postUid) {
+                    alert('你只能删除自己的帖子');
+                    return;
+                }
+                
+                if (confirm('确定要删除这条帖子吗？')) {
+                    // 使用完整的数据库引用路径
+                    const postRef = ref(db, `forum-posts/${postId}`);
+                    await remove(postRef);
+                    // 从 DOM 中移除帖子
+                    document.querySelector(`[data-post-id="${postId}"]`).remove();
+                    console.log('帖子删除成功:', postId);
+                }
+            } catch (error) {
+                console.error('删除失败:', error);
+                console.error('错误详情:', error.code, error.message);
+                alert('删除失败，请重试');
+            }
+        };
+
+        // 加载帖子
+        onChildAdded(postsRef, (snapshot) => {
+            const post = snapshot.val();
+            if (!post) return;
+            addPostToDOM(post);
+        });
+
+        // 添加帖子到页面
+        function addPostToDOM(post) {
+            const postList = document.querySelector('.post-list');
+            const postElement = document.createElement('div');
+            postElement.className = 'post-item';
+            postElement.setAttribute('data-post-id', post.postId);
+            
+            // 处理时间戳
+            let dateStr = '刚刚';
+            if (post.timestamp) {
+                const date = new Date(post.timestamp);
+                dateStr = date.toLocaleString();
+            }
+
+            // 检查是否是当前用户的帖子
+            const isCurrentUserPost = currentUserUid === post.uid;
+            // 检查当前用户是否已点赞
+            const hasLiked = post.likedBy && post.likedBy[currentUserUid];
+
+            postElement.innerHTML = `
+                <div class="post-header">
+                    <div class="post-author">
+                        <div class="author-avatar">${post.author[0]}</div>
+                        <span>${post.author}</span>
+                    </div>
+                    <div class="post-meta">
+                        ${dateStr}
+                        ${isCurrentUserPost ? `
+                            <button class="delete-btn" onclick="deletePost('${post.postId}', '${post.uid}')">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"></path>
+                                </svg>
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+                <div class="post-content">${post.content}</div>
+                <div class="post-actions">
+                    <button class="action-btn like-btn ${hasLiked ? 'liked' : ''}" onclick="toggleLike('${post.postId}')">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="${hasLiked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2">
+                            <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"></path>
+                        </svg>
+                        <span class="like-count">${post.likes || 0}</span>
+                    </button>
+                    <button class="action-btn comment-btn" onclick="toggleComments('${post.postId}')">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                        </svg>
+                        <span class="comment-count">${Object.keys(post.comments || {}).length}</span>
+                    </button>
+                </div>
+                <div class="comments-section" style="display: none;">
+                    <div class="comments-list">
+                        ${renderComments(post.comments)}
+                    </div>
+                    <div class="comment-input-container">
+                        <input type="text" class="comment-input" placeholder="写下你的评论..." maxlength="100">
+                        <button onclick="addComment('${post.postId}', this.previousElementSibling)">发送</button>
+                    </div>
+                </div>
+            `;
+            
+            postList.insertBefore(postElement, postList.firstChild);
+        }
+
+        // 渲染评论列表
+        function renderComments(comments, postId) {
+            if (!comments) return '';
+            // 过滤掉已删除的评论
+            const validComments = Object.entries(comments)
+                .filter(([_, comment]) => comment !== null)
+                .sort((a, b) => b[1].timestamp - a[1].timestamp)
+                .map(([commentId, comment]) => `
+                    <div class="comment-item" data-comment-id="${commentId}">
+                        <div class="comment-author">${comment.author}</div>
+                        <div class="comment-content">${comment.content}</div>
+                        <div class="comment-time">${new Date(comment.timestamp).toLocaleString()}</div>
+                        ${comment.uid === currentUserUid ? `
+                            <button class="delete-comment-btn" onclick="deleteComment('${postId}', '${commentId}')">
+                                删除
+                            </button>
+                        ` : ''}
+                    </div>
+                `).join('');
+            return validComments;
+        }
+
+        // 修改点赞功能
+        window.toggleLike = async (postId) => {
+            try {
+                const uid = await ensureAuth();
+                const postRef = ref(db, `forum-posts/${postId}`);
+                // 先检查帖子是否存在
+                const postSnapshot = await get(postRef);
+                if (!postSnapshot.exists()) {
+                    throw new Error('帖子不存在');
+                }
+
+                // 获取当前点赞状态
+                const snapshot = await get(postRef);
+                const post = snapshot.val();
+                
+                const hasLiked = post.likedBy && post.likedBy[uid];
+                const updates = {
+                    [`forum-posts/${postId}/likedBy/${uid}`]: hasLiked ? null : true,
+                    [`forum-posts/${postId}/likes`]: hasLiked ? 
+                        Math.max(0, (post.likes || 1) - 1) : 
+                        (post.likes || 0) + 1
+                };
+                
+                // 使用根引用进行更新
+                await update(ref(db), updates);
+                
+                // 更新 UI
+                const likeBtn = document.querySelector(`[data-post-id="${postId}"] .like-btn`);
+                const likeCount = likeBtn.querySelector('.like-count');
+                const likeSvg = likeBtn.querySelector('svg');
+                
+                if (hasLiked) {
+                    likeBtn.classList.remove('liked');
+                    likeSvg.setAttribute('fill', 'none');
+                    likeCount.textContent = Math.max(0, (post.likes || 1) - 1);
+                } else {
+                    likeBtn.classList.add('liked');
+                    likeSvg.setAttribute('fill', 'currentColor');
+                    likeCount.textContent = (post.likes || 0) + 1;
+                }
+            } catch (error) {
+                console.error('点赞失败:', error);
+                console.error('错误详情:', error.code, error.message);
+                alert('点赞失败，请重试');
+            }
+        };
+
+        // 显示/隐藏评论区
+        window.toggleComments = (postId) => {
+            const post = document.querySelector(`[data-post-id="${postId}"]`);
+            const commentsSection = post.querySelector('.comments-section');
+            const isHidden = commentsSection.style.display === 'none';
+            
+            commentsSection.style.display = isHidden ? 'block' : 'none';
+            
+            // 如果是显示评论区，重新加载评论
+            if (isHidden) {
+                const commentsRef = ref(db, `forum-posts/${postId}/comments`);
+                get(commentsRef).then(snapshot => {
+                    const comments = snapshot.val();
+                    const commentsList = post.querySelector('.comments-list');
+                    commentsList.innerHTML = renderComments(comments, postId);
+                });
+            }
+        };
+
+        // 修改添加评论功能
+        window.addComment = async (postId, input) => {
+            const content = input.value.trim();
+            if (!content) return;
+            
+            try {
+                const uid = await ensureAuth();
+                const author = localStorage.getItem('christmasNickname') || '匿名用户';
+                
+                const commentData = {
+                    content,
+                    author,
+                    uid,
+                    timestamp: Date.now()
+                };
+                
+                // 先检查帖子是否存在
+                const postRef = ref(db, `forum-posts/${postId}`);
+                const postSnapshot = await get(postRef);
+                if (!postSnapshot.exists()) {
+                    throw new Error('帖子不存在');
+                }
+
+                // 使用 push 生成新的评论 key
+                const newCommentKey = push(child(ref(db), 'temp')).key;
+                
+                // 构建更新对象
+                const updates = {
+                    [`forum-posts/${postId}/comments/${newCommentKey}`]: commentData
+                };
+
+                // 使用根引用进行更新
+                await update(ref(db), updates);
+                
+                // 更新 UI
+                const commentsSection = document.querySelector(`[data-post-id="${postId}"] .comments-list`);
+                const commentCount = document.querySelector(`[data-post-id="${postId}"] .comment-count`);
+                
+                // 获取当前有效的评论数
+                const commentsRef = ref(db, `forum-posts/${postId}/comments`);
+                const snapshot = await get(commentsRef);
+                const comments = snapshot.val();
+                const validCommentsCount = comments ? 
+                    Object.values(comments).filter(comment => comment !== null).length : 0;
+                
+                commentCount.textContent = validCommentsCount;
+                
+                // 添加新评论到DOM
+                const commentElement = document.createElement('div');
+                commentElement.className = 'comment-item';
+                commentElement.setAttribute('data-comment-id', newCommentKey);
+                commentElement.innerHTML = `
+                    <div class="comment-author">${author}</div>
+                    <div class="comment-content">${content}</div>
+                    <div class="comment-time">${new Date().toLocaleString()}</div>
+                    <button class="delete-comment-btn" onclick="deleteComment('${postId}', '${newCommentKey}')">
+                        删除
+                    </button>
+                `;
+                
+                commentsSection.insertBefore(commentElement, commentsSection.firstChild);
+                input.value = '';
+            } catch (error) {
+                console.error('评论失败:', error);
+                console.error('错误详情:', error.code, error.message);
+                alert('评论失败，请重试');
+            }
+        };
+
+        // 修改删除评论功能
+        window.deleteComment = async (postId, commentId) => {
+            if (confirm('确定要删除这条评论吗？')) {
+                try {
+                    const commentRef = ref(db, `forum-posts/${postId}/comments/${commentId}`);
+                    await remove(commentRef);
+                    
+                    // 更新 UI
+                    const commentElement = document.querySelector(`[data-comment-id="${commentId}"]`);
+                    if (commentElement) {
+                        commentElement.remove();
+                        
+                        // 更新评论计数
+                        const commentsRef = ref(db, `forum-posts/${postId}/comments`);
+                        const snapshot = await get(commentsRef);
+                        const comments = snapshot.val();
+                        const validCommentsCount = comments ? 
+                            Object.values(comments).filter(comment => comment !== null).length : 0;
+                        
+                        const commentCount = document.querySelector(`[data-post-id="${postId}"] .comment-count`);
+                        commentCount.textContent = validCommentsCount;
+                    }
+                } catch (error) {
+                    console.error('删除评论失败:', error);
+                    alert('删除失败，请重试');
+                }
+            }
+        };
+
+        // 点击模态框外部关闭
+        document.querySelector('.new-post-modal').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) {
+                hideNewPostModal();
+            }
+        });
+
+        // 添加字数统计功能
+        window.updateCharCount = (textarea) => {
+            const maxLength = parseInt(textarea.getAttribute('maxlength'));
+            const currentLength = textarea.value.length;
+            const remainingChars = maxLength - currentLength;
+            const charCountSpan = textarea.closest('form').querySelector('.char-count span');
+            charCountSpan.textContent = remainingChars;
+        };
+
+        // 添加新的样式
+        const style = document.createElement('style');
+        style.textContent = `
+            .form-group {
+                margin-bottom: 16px;
+            }
+
+            .nickname-input {
+                width: 100%;
+                padding: 12px;
+                border: 2px solid #eee;
+                border-radius: 8px;
+                font-size: 16px;
+                transition: all 0.3s ease;
+                box-sizing: border-box;
+            }
+
+            .nickname-input:focus {
+                outline: none;
+                border-color: #000;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            }
+        `;
+        document.head.appendChild(style);
+
+        // 添加实时监听点赞和评论变化
+        onValue(postsRef, (snapshot) => {
+            const posts = snapshot.val();
+            if (!posts) return;
+            
+            Object.entries(posts).forEach(([postId, post]) => {
+                // 更新点赞状态
+                const likeBtn = document.querySelector(`[data-post-id="${postId}"] .like-btn`);
+                if (likeBtn) {
+                    const likeCount = likeBtn.querySelector('.like-count');
+                    const likeSvg = likeBtn.querySelector('svg');
+                    const hasLiked = post.likedBy && post.likedBy[currentUserUid];
+                    
+                    likeCount.textContent = post.likes || 0;
+                    if (hasLiked) {
+                        likeBtn.classList.add('liked');
+                        likeSvg.setAttribute('fill', 'currentColor');
+                    } else {
+                        likeBtn.classList.remove('liked');
+                        likeSvg.setAttribute('fill', 'none');
+                    }
+                }
+                
+                // 更新评论数量
+                const commentCount = document.querySelector(`[data-post-id="${postId}"] .comment-count`);
+                if (commentCount) {
+                    const count = post.comments ? Object.keys(post.comments).length : 0;
+                    commentCount.textContent = Math.max(0, count); // 确保不会显示负数
+                }
+            });
+        });
+
+        // 页面加载时初始化用户状态
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // 确保用户已认证
+                await ensureAuth();
+            } catch (error) {
+                console.error('初始化认证失败:', error);
+            }
+        });
+    </script>
+</body>
+</html> 
