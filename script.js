@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (bellSound) {
             bellSound.play()
                 .catch(error => {
-                    console.error('铃���播放失败:', error);
+                    console.error('铃铛播放失败:', error);
                 });
         }
     }
@@ -396,7 +396,7 @@ class Character {
         
         // 动物
         '🐶', '🐱', '🐰', '🦊', '🐼', '🐨',
-        '🦁', '🐯', '🪿', '🦄', '🐲', '🐵',
+        '🦁', '🐯', '🪿', '🦄', '🐲', '���',
         
         // 节日相关
         '🎅', '🎅🏻', '🎅🏼', '🎅🏽', '🎅🏾', '🎅🏿',
@@ -409,7 +409,7 @@ class Character {
         
         // 幻想角色
         '🧚‍♂️', '🧚‍♀️', '🧛‍♂️', '🧛‍♀️', '🧜‍♂️', '🧜‍♀️',
-        '🧞‍♂️', '🧞‍��️', '', '🧟‍♀️', '👼', '👻'
+        '🧞‍♂️', '🧞‍♀️', '', '🧟‍♀️', '👼', '👻'
     ];
 
     static create(message, senderId) {
@@ -503,6 +503,58 @@ class Character {
         if (!this.loadPosition()) {
             this.setInitialPosition();
         }
+
+        // 添加触摸事件支持
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let isDragging = false;
+
+        character.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            touchStartX = e.touches[0].clientX - this.position.x;
+            touchStartY = e.touches[0].clientY - this.position.y;
+            isDragging = true;
+        });
+
+        character.addEventListener('touchmove', (e) => {
+            if (!isDragging) return;
+            e.preventDefault();
+            
+            const x = e.touches[0].clientX - touchStartX;
+            const y = e.touches[0].clientY - touchStartY;
+            
+            // 确保不会超出屏幕边界
+            const maxX = window.innerWidth - character.offsetWidth;
+            const maxY = window.innerHeight - character.offsetHeight;
+            
+            this.position = {
+                x: Math.min(Math.max(0, x), maxX),
+                y: Math.min(Math.max(0, y), maxY)
+            };
+            
+            character.style.left = this.position.x + 'px';
+            character.style.top = this.position.y + 'px';
+        });
+
+        character.addEventListener('touchend', () => {
+            isDragging = false;
+        });
+
+        // 添加长按事件支持
+        let longPressTimer;
+        character.addEventListener('touchstart', (e) => {
+            longPressTimer = setTimeout(() => {
+                this.showActionMenu(e);
+            }, 500);
+        });
+
+        character.addEventListener('touchend', () => {
+            clearTimeout(longPressTimer);
+        });
+
+        character.addEventListener('touchmove', () => {
+            clearTimeout(longPressTimer);
+        });
     }
 
     setInitialPosition() {
@@ -747,7 +799,7 @@ class Character {
                     e.stopPropagation();
                     if (confirm('确定要删除这条消息吗？')) {
                         try {
-                            // 从全局��取 Firebase 函数
+                            // 从全局取 Firebase 函数
                             const { ref, get, remove } = await import('https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js');
                             
                             // 查找并删除消息
@@ -960,7 +1012,7 @@ class Character {
                 }
             };
             
-            // 绑定发送按钮事件
+            // 绑定发送按钮��件
             sendButton.onclick = sendMessage;
             
             // 绑定回车发送
@@ -993,7 +1045,7 @@ class Character {
             };
         } catch (error) {
             console.error('打开私聊失败:', error);
-            alert('打开私聊失���，请重试');
+            alert('打开私聊失败，请重试');
         }
     }
 
@@ -1199,6 +1251,24 @@ class Character {
         setTimeout(() => {
             document.addEventListener('click', closeMenu);
         }, 0);
+
+        // 优化移动端菜单位置
+        if ('ontouchstart' in window) {
+            const screenWidth = window.innerWidth;
+            const screenHeight = window.innerHeight;
+            const menuRect = menu.getBoundingClientRect();
+            
+            // 确保菜单不会超出屏幕
+            if (menuRect.right > screenWidth) {
+                menu.style.left = `${screenWidth - menuRect.width - 10}px`;
+            }
+            if (menuRect.top < 0) {
+                menu.style.top = `${rect.bottom + 10}px`;
+            }
+            if (menuRect.bottom > screenHeight) {
+                menu.style.top = `${rect.top - menuRect.height - 10}px`;
+            }
+        }
     }
 }
 
@@ -1245,7 +1315,7 @@ function initializeMessageSystem() {
         sendMessage();
     });
 
-    // 模态框关闭功能
+    // 模态框关���功能
     if (closeModal && modal) {
         closeModal.addEventListener('click', () => {
             modal.style.display = 'none';
@@ -1372,7 +1442,7 @@ async function loadMusicList() {
                         上传时间: ${new Date(data.uploadTime).toLocaleString()}
                     </div>
                 </div>
-                <button class="delete-btn" onclick="deleteMusic('${key}', '${data.name}')">��除</button>
+                <button class="delete-btn" onclick="deleteMusic('${key}', '${data.name}')">删除</button>
             `;
             musicList.appendChild(item);
         });
@@ -1410,3 +1480,67 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error('初始化认证失败:', error);
     }
 }); 
+
+// 添加移动端手势支持
+document.addEventListener('DOMContentLoaded', () => {
+    let touchStartY = 0;
+    let touchStartTime = 0;
+
+    document.addEventListener('touchstart', (e) => {
+        touchStartY = e.touches[0].clientY;
+        touchStartTime = Date.now();
+    });
+
+    document.addEventListener('touchend', (e) => {
+        const touchEndY = e.changedTouches[0].clientY;
+        const touchEndTime = Date.now();
+        const touchDuration = touchEndTime - touchStartTime;
+        const touchDistance = touchEndY - touchStartY;
+
+        // 快速下滑显示菜单
+        if (touchDuration < 300 && touchDistance > 50) {
+            const menuBar = document.querySelector('.menu-bar');
+            menuBar.classList.remove('hidden');
+            clearTimeout(menuTimeout);
+            menuTimeout = setTimeout(() => {
+                menuBar.classList.add('hidden');
+            }, 3000);
+        }
+    });
+
+    // 优化移动端输入体验
+    const input = document.getElementById('messageInput');
+    if (input) {
+        input.addEventListener('focus', () => {
+            // 输入框获得焦点时，滚动到可见区域
+            setTimeout(() => {
+                input.scrollIntoView({ behavior: 'smooth' });
+            }, 300);
+        });
+    }
+});
+
+// 添加移动端性能优化
+function optimizeForMobile() {
+    // 减少动画数量
+    if ('ontouchstart' in window) {
+        const snowContainer = document.querySelector('.snow-container');
+        if (snowContainer) {
+            clearInterval(snowInterval);
+            snowInterval = setInterval(createSnowflake, 500); // 降低雪花生成频率
+        }
+
+        // 优化触摸反馈
+        document.querySelectorAll('button, .menu-link').forEach(element => {
+            element.addEventListener('touchstart', () => {
+                element.style.transform = 'scale(0.95)';
+            });
+            element.addEventListener('touchend', () => {
+                element.style.transform = 'scale(1)';
+            });
+        });
+    }
+}
+
+// 页面加载时初始化移动端优化
+window.addEventListener('load', optimizeForMobile); 
