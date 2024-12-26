@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>灯谜挑战 - 新年游戏</title>
+    <style>
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 50%, #ffd1ff 100%);
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .game-container {
+            max-width: 800px;
+            width: 90%;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(10px);
+            animation: containerFadeIn 0.8s ease-out;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            color: #1d1d1f;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #FF6B6B, #FF8E53);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .score-board {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            font-size: 18px;
+            padding: 15px 20px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .riddle-container {
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        }
+
+        .riddle {
+            font-size: 24px;
+            margin-bottom: 25px;
+            text-align: center;
+            color: #1d1d1f;
+            line-height: 1.4;
+            padding: 15px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .option {
+            padding: 15px;
+            border: 2px solid rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            font-size: 20px;
+            background: white;
+            color: #333;
+        }
+
+        .option:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            border-color: #FF6B6B;
+        }
+
+        .option.correct {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            border-color: #4CAF50;
+            transform: scale(1.02);
+        }
+
+        .option.wrong {
+            background: linear-gradient(45deg, #FF5252, #ff4444);
+            color: white;
+            border-color: #FF5252;
+            transform: scale(0.98);
+        }
+
+        @keyframes containerFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes optionPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .result-container {
+            text-align: center;
+            display: none;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .result-container h2 {
+            font-size: 32px;
+            margin-bottom: 20px;
+            background: linear-gradient(45deg, #FF6B6B, #FF8E53);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .back-button {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            padding: 8px 16px;
+            background: white;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            text-decoration: none;
+            color: #000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+
+        .back-button:hover {
+            transform: translateX(-4px);
+        }
+
+        @media (max-width: 600px) {
+            .game-container {
+                width: 95%;
+                padding: 20px;
+            }
+
+            .options {
+                grid-template-columns: 1fr;
+            }
+
+            .riddle {
+                font-size: 20px;
+            }
+
+            .option {
+                font-size: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <a href="game.html" class="back-button">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+        返回游戏菜单
+    </a>
+
+    <div class="game-container">
+        <div class="header">
+            <h1>灯谜挑战</h1>
+        </div>
+
+        <div class="score-board">
+            <div>得分: <span id="score">0</span></div>
+            <div>剩余: <span id="remaining">10</span></div>
+        </div>
+
+        <div class="riddle-container">
+            <div class="riddle" id="riddle-text"></div>
+            <div class="options" id="options"></div>
+        </div>
+
+        <div class="result-container" id="result">
+            <h2>游戏结束</h2>
+            <p>最终得分: <span id="final-score">0</span></p>
+            <button class="next-btn" onclick="restartGame()">再玩一次</button>
+        </div>
+    </div>
+
+    <script>
+        const riddles = [
+            {
+                question: "一个人走，两个人看，三个人倒。打一字",
+                options: ["大", "众", "从", "众"],
+                answer: 2
+            },
+            {
+                question: "四面有山五面光。打一字",
+                options: ["困", "田", "回", "国"],
+                answer: 0
+            },
+            {
+                question: "人一张口，口下长胡须。打一字",
+                options: ["手", "毛", "须", "心"],
+                answer: 1
+            },
+            {
+                question: "一口咬掉牛尾巴。打一字",
+                options: ["告", "知", "午", "牛"],
+                answer: 2
+            },
+            {
+                question: "一字十三点，点点不相连。打一字",
+                options: ["恭", "思", "惠", "想"],
+                answer: 0
+            },
+            {
+                question: "上八下十。打一字",
+                options: ["午", "牛", "生", "千"],
+                answer: 1
+            },
+            {
+                question: "一个口，两个口，一个口搬到下面就是鸟。打一字",
+                options: ["只", "鸟", "叫", "吗"],
+                answer: 0
+            },
+            {
+                question: "一个人伸出两只手。打一字",
+                options: ["天", "夫", "大", "太"],
+                answer: 2
+            },
+            {
+                question: "一加一。打一字",
+                options: ["王", "工", "二", "三"],
+                answer: 1
+            },
+            {
+                question: "两个小孩一边耍。打一字",
+                options: ["戏", "玩", "游", "耍"],
+                answer: 0
+            }
+        ];
+
+        let currentRiddle = 0;
+        let score = 0;
+        let canNext = false;
+
+        const riddleText = document.getElementById('riddle-text');
+        const optionsContainer = document.getElementById('options');
+        const scoreElement = document.getElementById('score');
+        const remainingElement = document.getElementById('remaining');
+        const resultContainer = document.getElementById('result');
+        const finalScoreElement = document.getElementById('final-score');
+
+        function showRiddle() {
+            const riddle = riddles[currentRiddle];
+            riddleText.textContent = riddle.question;
+            optionsContainer.innerHTML = '';
+            
+            riddle.options.forEach((option, index) => {
+                const button = document.createElement('button');
+                button.className = 'option';
+                button.textContent = option;
+                button.onclick = () => checkAnswer(index);
+                optionsContainer.appendChild(button);
+            });
+
+            remainingElement.textContent = riddles.length - currentRiddle;
+        }
+
+        function checkAnswer(selectedIndex) {
+            if (canNext) return;
+
+            const riddle = riddles[currentRiddle];
+            const options = document.querySelectorAll('.option');
+
+            options[selectedIndex].classList.add(
+                selectedIndex === riddle.answer ? 'correct' : 'wrong'
+            );
+
+            if (selectedIndex === riddle.answer) {
+                score += 10;
+                scoreElement.textContent = score;
+            }
+
+            options[riddle.answer].classList.add('correct');
+            options.forEach(option => option.disabled = true);
+            
+            setTimeout(() => {
+                currentRiddle++;
+                if (currentRiddle < riddles.length) {
+                    showRiddle();
+                } else {
+                    endGame();
+                }
+            }, 1500);
+        }
+
+        function endGame() {
+            document.querySelector('.riddle-container').style.display = 'none';
+            resultContainer.style.display = 'block';
+            finalScoreElement.textContent = score;
+        }
+
+        function restartGame() {
+            currentRiddle = 0;
+            score = 0;
+            scoreElement.textContent = score;
+            resultContainer.style.display = 'none';
+            document.querySelector('.riddle-container').style.display = 'block';
+            showRiddle();
+        }
+
+        document.querySelector('.next-btn').remove();
+        showRiddle();
+    </script>
+</body>
+</html> 

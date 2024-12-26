@@ -129,6 +129,12 @@
                 </svg>
                 净化星愿
             </a>
+            <a href="game.html" class="menu-link">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 14v3m-3-3h6M15 7v3M9 7v3m3-6a9 9 0 1 0 0 18 9 9 0 0 0 0-18z"/>
+                </svg>
+                游戏
+            </a>
         </div>
     </div>
 
@@ -239,7 +245,7 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        window.database = db; // 保���全局引用
+        window.database = db; // 保存全局引用
         const dbRef = ref(db);
         const messagesRef = ref(db, 'messages');
 
@@ -396,7 +402,7 @@
                             deleteBtn.className = 'delete-message';
                             deleteBtn.innerHTML = '×';
                             deleteBtn.onclick = async () => {
-                                if (confirm('确定要删除这条消息吗���')) {
+                                if (confirm('确定要删除这条消息吗？')) {
                                     await deleteMessage(message.key, message.senderId, false);
                                 }
                             };
@@ -588,7 +594,7 @@
 
         // 修改切换标签函数
         window.switchTab = (tabId) => {
-            // 隐藏所有标签内容
+            // 隐���所有标签内容
             document.querySelectorAll('.tab-content').forEach(content => {
                 content.style.display = 'none';
             });

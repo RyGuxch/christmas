@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>祝福接收者 - 新年游戏</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .game-container {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+            background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 50%, #ffd1ff 100%);
+            animation: gradientBG 20s ease infinite;
+            background-size: 400% 400%;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50% }
+            50% { background-position: 100% 50% }
+            100% { background-position: 0% 50% }
+        }
+
+        .player {
+            position: absolute;
+            bottom: 100px;
+            left: 50%;
+            width: 60px;
+            height: 60px;
+            font-size: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            user-select: none;
+            transform: translateX(-50%);
+            will-change: transform, left;
+            transition: transform 0.05s linear;
+            z-index: 100;
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+            animation: float 2s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateX(-50%) translateY(0); }
+            50% { transform: translateX(-50%) translateY(-10px); }
+        }
+
+        .blessing, .bad-luck {
+            position: fixed;
+            font-size: 32px;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+            will-change: transform;
+            transform-origin: center;
+            box-sizing: border-box;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .blessing {
+            background: radial-gradient(circle at center, rgba(255,215,0,0.2) 0%, transparent 70%);
+            text-shadow: 0 0 10px rgba(255,215,0,0.5);
+        }
+
+        .bad-luck {
+            background: radial-gradient(circle at center, rgba(255,0,0,0.2) 0%, transparent 70%);
+            text-shadow: 0 0 10px rgba(255,0,0,0.5);
+        }
+
+        .score-board {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            border-radius: 20px;
+            min-width: 150px;
+            z-index: 1000;
+        }
+
+        .score {
+            font-size: 28px;
+            background: linear-gradient(45deg, #FF6B6B, #FF8E53);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+
+        .lives {
+            text-align: center;
+            font-size: 24px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .game-over {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.95);
+            padding: 32px;
+            border-radius: 16px;
+            text-align: center;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+            display: none;
+            z-index: 2000;
+            backdrop-filter: blur(20px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .game-over h2 {
+            font-size: 36px;
+            margin-bottom: 16px;
+            color: #1d1d1f;
+            background: linear-gradient(45deg, #FF6B6B, #FF8E53);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .game-over p {
+            font-size: 18px;
+            margin-bottom: 24px;
+            color: #86868b;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin: 0 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #FF6B6B, #FF8E53);
+            border: none;
+            transform-origin: center;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 20px rgba(255, 107, 107, 0.3);
+        }
+
+        .btn-secondary {
+            background: #f5f5f7;
+            color: #1d1d1f;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        @keyframes fall {
+            from {
+                transform: translateY(-40px);
+            }
+            to {
+                transform: translateY(calc(100vh + 40px));
+            }
+        }
+
+        @media (max-width: 768px) {
+            .player {
+                bottom: 150px;
+            }
+        }
+
+        .cloud {
+            position: absolute;
+            opacity: 0.8;
+            animation: floatCloud linear infinite;
+            filter: brightness(1.2);
+            z-index: 1;
+        }
+
+        @keyframes floatCloud {
+            from { transform: translateX(-150px); }
+            to { transform: translateX(100vw); }
+        }
+
+        .particle {
+            position: absolute;
+            pointer-events: none;
+            animation: particle 0.8s ease-out forwards;
+        }
+
+        @keyframes particle {
+            0% {
+                transform: translate(0, 0) scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(var(--tx), var(--ty)) scale(0);
+                opacity: 0;
+            }
+        }
+
+        .difficulty {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 12px;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            font-size: 16px;
+            color: #1d1d1f;
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            animation: slideIn 0.5s ease-out;
+        }
+
+        .difficulty-bar {
+            width: 100px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.3);
+            overflow: hidden;
+        }
+
+        .difficulty-fill {
+            height: 100%;
+            background: linear-gradient(45deg, #4CAF50, #FFC107, #FF5722);
+            background-size: 200% 200%;
+            animation: gradientFlow 2s linear infinite;
+        }
+
+        @keyframes gradientFlow {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 100% 50%; }
+        }
+
+        .back-button {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 8px 16px;
+            background: rgba(255, 255, 255, 0.95);
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            text-decoration: none;
+            color: #000000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            transition: all 0.2s ease;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+
+        .back-button:hover {
+            transform: translateX(-50%) translateY(-2px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        @media (max-width: 768px) {
+            .back-button {
+                top: 16px;
+                padding: 6px 12px;
+                font-size: 13px;
+            }
+
+            .difficulty {
+                top: 70px;
+            }
+        }
+
+        /* 装饰元素 */
+        .decoration {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .lantern {
+            position: absolute;
+            width: 40px;
+            height: 60px;
+            background: rgba(255, 0, 0, 0.2);
+            border-radius: 20px;
+            animation: swing 3s ease-in-out infinite;
+        }
+
+        @keyframes swing {
+            0%, 100% { transform: rotate(-5deg); }
+            50% { transform: rotate(5deg); }
+        }
+
+        /* 优化计分板 */
+        .score-board {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            border-radius: 20px;
+            min-width: 150px;
+        }
+
+        .score {
+            font-size: 28px;
+            background: linear-gradient(45deg, #FF6B6B, #FF8E53);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 12px;
+            text-align: center;
+        }
+
+        .lives {
+            text-align: center;
+            font-size: 24px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        /* 玩家红包样式 */
+        .player {
+            filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2));
+            animation: float 2s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateX(-50%) translateY(0); }
+            50% { transform: translateX(-50%) translateY(-10px); }
+        }
+
+        /* 祝福和厄运样式 */
+        .blessing {
+            background: radial-gradient(circle at center, rgba(255,215,0,0.2) 0%, transparent 70%);
+            text-shadow: 0 0 10px rgba(255,215,0,0.5);
+            animation: fall linear, glow 1s ease-in-out infinite;
+        }
+
+        .bad-luck {
+            background: radial-gradient(circle at center, rgba(255,0,0,0.2) 0%, transparent 70%);
+            text-shadow: 0 0 10px rgba(255,0,0,0.5);
+            animation: fall linear, shake 0.5s ease-in-out infinite;
+        }
+
+        @keyframes glow {
+            0%, 100% { filter: brightness(1); }
+            50% { filter: brightness(1.3); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-2px); }
+            75% { transform: translateX(2px); }
+        }
+
+        /* 游戏结束界面 */
+        .game-over {
+            backdrop-filter: blur(20px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .game-over h2 {
+            background: linear-gradient(45deg, #FF6B6B, #FF8E53);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 36px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #FF6B6B, #FF8E53);
+            border: none;
+            transform-origin: center;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 20px rgba(255, 107, 107, 0.3);
+        }
+
+        /* 难度指示器 */
+        .difficulty {
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            animation: slideIn 0.5s ease-out;
+        }
+
+        .difficulty-bar {
+            background: rgba(255, 255, 255, 0.3);
+            overflow: hidden;
+        }
+
+        .difficulty-fill {
+            background: linear-gradient(45deg, #4CAF50, #FFC107, #FF5722);
+            background-size: 200% 200%;
+            animation: gradientFlow 2s linear infinite;
+        }
+
+        @keyframes gradientFlow {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 100% 50%; }
+        }
+
+        /* 添加得分动画 */
+        .score {
+            animation: scoreUpdate 0.5s ease-out;
+        }
+
+        @keyframes scoreUpdate {
+            0% { transform: scale(1.5); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translate(-50%, -40%); }
+            to { opacity: 1; transform: translate(-50%, -50%); }
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(-100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        .difficulty-upgrade {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 20px;
+            font-size: 18px;
+            animation: notificationFade 2s ease-out forwards;
+            z-index: 1000;
+        }
+
+        @keyframes notificationFade {
+            0% {
+                opacity: 0;
+                transform: translate(-50%, -30%);
+            }
+            20% {
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
+            80% {
+                opacity: 1;
+                transform: translate(-50%, -50%);
+            }
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -70%);
+            }
+        }
+
+        .difficulty {
+            transition: all 0.3s ease;
+        }
+
+        .difficulty-fill {
+            transition: width 0.5s ease-out;
+        }
+
+        .name-input {
+            padding: 8px 16px;
+            border: 2px solid rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            font-size: 16px;
+            margin: 16px 0;
+            width: 200px;
+            text-align: center;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+    </style>
+</head>
+<body>
+    <a href="game.html" class="back-button">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+        </svg>
+        返回游戏菜单
+    </a>
+
+    <div class="game-container">
+        <div class="decoration">
+            <div class="lantern" style="top: 10%; left: 10%;"></div>
+            <div class="lantern" style="top: 15%; right: 15%;"></div>
+            <div class="lantern" style="top: 20%; left: 20%;"></div>
+        </div>
+
+        <div class="score-board">
+            <div class="score">得分: <span id="score">0</span></div>
+            <div class="lives">生命: <span id="lives">❤️❤️❤️</span></div>
+        </div>
+
+        <div class="game-over">
+            <h2>游戏结束</h2>
+            <p>你的得分: <span id="final-score">0</span></p>
+            <div class="button-group">
+                <button class="btn btn-primary" onclick="restartGame()">再玩一次</button>
+                <button class="btn btn-secondary" onclick="window.location.href='index.html'">返回主页</button>
+            </div>
+        </div>
+
+        <div id="player" class="player">🧧</div>
+
+        <div class="difficulty">
+            <div>难度: <span id="difficulty-level">1</span></div>
+            <div class="difficulty-bar">
+                <div class="difficulty-fill" style="width: 0%"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const player = document.getElementById('player');
+        const gameContainer = document.querySelector('.game-container');
+        const scoreElement = document.getElementById('score');
+        const livesElement = document.getElementById('lives');
+        const gameOverScreen = document.querySelector('.game-over');
+        const finalScoreElement = document.getElementById('final-score');
+
+        let score = 0;
+        let lives = 3;
+        let gameActive = true;
+        let touchStartX = 0;
+
+        const blessings = ['福', '禄', '寿', '喜', '春', '财', '安', '康'];
+        const badLuck = ['💀', '👻', '😈', '🌧️', '⚡'];
+
+        let difficultyLevel = 1;
+        let gameTime = 0;
+        let spawnRate = 1000;
+        let itemSpeed = 3;
+        let badLuckProbability = 0.3;
+        
+        let gameLoop = null;
+
+        // 玩家���动控制
+        function handleMove(clientX) {
+            const rect = gameContainer.getBoundingClientRect();
+            const x = clientX - rect.left;
+            const playerWidth = player.offsetWidth;
+            
+            // 计算容器边界
+            const minX = 0;
+            const maxX = rect.width;
+            
+            // 计算新位置（不包含 transform）
+            const newX = Math.max(minX, Math.min(x, maxX));
+            
+            // 直接设置位置，不使用 transform
+            player.style.left = `${newX}px`;
+            player.style.transform = 'translateX(-50%)';
+        }
+
+        // 触摸事件
+        gameContainer.addEventListener('touchstart', (e) => {
+            touchStartX = e.touches[0].clientX;
+        });
+
+        gameContainer.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            handleMove(touch.clientX);
+        });
+
+        // 鼠标事件
+        gameContainer.addEventListener('mousemove', (e) => {
+            if (gameActive) {
+                handleMove(e.clientX);
+            }
+        });
+
+        // 创建云朵
+        function createClouds() {
+            const clouds = ['☁️', '🌥️', '⛅'];
+            const cloud = document.createElement('div');
+            cloud.className = 'cloud';
+            cloud.textContent = clouds[Math.floor(Math.random() * clouds.length)];
+            cloud.style.top = Math.random() * 40 + '%';
+            cloud.style.fontSize = (Math.random() * 30 + 40) + 'px';
+            cloud.style.animationDuration = (Math.random() * 20 + 30) + 's';
+            gameContainer.appendChild(cloud);
+            
+            cloud.addEventListener('animationend', () => cloud.remove());
+        }
+
+        // 创建粒子效果
+        function createParticles(x, y, color, count = 12) {
+            for (let i = 0; i < count; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = x + 'px';
+                particle.style.top = y + 'px';
+                particle.style.backgroundColor = color;
+                particle.style.width = '12px';
+                particle.style.height = '12px';
+                particle.style.borderRadius = '50%';
+                particle.style.filter = 'blur(1px)';
+                
+                const angle = (Math.PI * 2 * i) / count;
+                const velocity = Math.random() * 100 + 50;
+                const duration = Math.random() * 0.5 + 0.5;
+                
+                particle.style.setProperty('--tx', Math.cos(angle) * velocity + 'px');
+                particle.style.setProperty('--ty', Math.sin(angle) * velocity + 'px');
+                particle.style.animation = `particle ${duration}s ease-out forwards`;
+                
+                gameContainer.appendChild(particle);
+                setTimeout(() => particle.remove(), duration * 1000);
+            }
+        }
+
+        // 更新难度
+        function updateDifficulty() {
+            gameTime++;
+            if (gameTime % 10 === 0) {
+                difficultyLevel++;
+                document.getElementById('difficulty-level').textContent = difficultyLevel;
+                
+                // 更新难度进度条
+                document.querySelector('.difficulty-fill').style.width = '100%';
+                document.querySelector('.difficulty-fill').textContent = `${difficultyLevel}`;
+                
+                // 生成速度：从1000ms开始减少（最快100ms，确保玩家有反应时间）
+                spawnRate = Math.max(100, Math.floor(1000 * Math.pow(0.7, difficultyLevel - 1)));
+                
+                // 下落速度：从3s开始减少（最快0.5s，确保可以看清）
+                itemSpeed = Math.max(0.5, 3 * Math.pow(0.8, difficultyLevel - 1));
+                
+                // 厄运概率：从0.3开始增长，但最大不超过0.8（确保有祝福生成）
+                badLuckProbability = Math.min(0.8, 0.3 * Math.pow(1.2, difficultyLevel - 1));
+                
+                // 显示当前难度信息
+                showDifficultyUpgrade();
+            }
+        }
+
+        // 添加难度提升提示函数
+        function showDifficultyUpgrade() {
+            const notification = document.createElement('div');
+            notification.className = 'difficulty-upgrade';
+            notification.innerHTML = `
+                <div>难度提升至 ${difficultyLevel} 级！</div>
+                <div style="font-size: 14px; margin-top: 5px;">
+                    生成间隔: ${spawnRate.toFixed(0)}ms<br>
+                    下落速度: ${itemSpeed.toFixed(1)}s<br>
+                    厄运概率: ${(badLuckProbability * 100).toFixed(0)}%<br>
+                    <span style="color: #4CAF50">每3个物品至少1个祝福</span>
+                </div>
+            `;
+            gameContainer.appendChild(notification);
+            
+            setTimeout(() => notification.remove(), 2000);
+        }
+
+        // 创建祝福或厄运
+        function createItem() {
+            if (!gameActive) return;
+
+            const item = document.createElement('div');
+            
+            // 确保每3个物品中至少有1个祝福
+            const forcedBlessing = window.itemCounter % 3 === 0;
+            window.itemCounter = (window.itemCounter || 0) + 1;
+            
+            // 根据难度和强制祝福决定是否生成厄运
+            const isBadLuck = !forcedBlessing && Math.random() < badLuckProbability;
+            
+            if (isBadLuck) {
+                item.className = 'bad-luck';
+                const badLuckTypes = ['凶', '厄', '祸', '灾', '霉', '衰', '煞', '毒'];
+                item.textContent = badLuckTypes[Math.floor(Math.random() * badLuckTypes.length)];
+            } else {
+                item.className = 'blessing';
+                const blessingTypes = ['福', '禄', '寿'];
+                item.textContent = blessingTypes[Math.floor(Math.random() * blessingTypes.length)];
+            }
+
+            // 设置固定宽度
+            const itemWidth = 60; // 与 CSS 中的宽度匹配
+            
+            // 计算安全边界
+            const containerWidth = gameContainer.offsetWidth;
+            const safeMargin = itemWidth / 2;
+            
+            // 确保完全在视图内
+            const minX = safeMargin;
+            const maxX = containerWidth - safeMargin;
+            const x = Math.random() * (maxX - minX) + minX;
+            
+            // 设置初始位置，使用 transform 进行定位调整
+            item.style.position = 'fixed';
+            item.style.left = `${x}px`;
+            item.style.top = '-60px'; // 确保完全在视图外开始
+            item.style.transform = 'translateX(-50%)'; // 居中对齐
+
+            const speed = itemSpeed + Math.random() * 2;
+            item.style.animation = `fall ${speed}s linear`;
+
+            gameContainer.appendChild(item);
+
+            // 添加调试边框（开发时可用）
+            // item.style.border = '1px solid red';
+
+            item.addEventListener('animationend', () => {
+                if (item.parentNode) {
+                    item.remove();
+                }
+            });
+
+            checkCollision(item, isBadLuck);
+        }
+
+        // 碰撞检测
+        function checkCollision(item, isBadLuck) {
+            const checkInterval = setInterval(() => {
+                if (!gameActive || !item.parentNode) {
+                    clearInterval(checkInterval);
+                    return;
+                }
+
+                const playerRect = player.getBoundingClientRect();
+                const itemRect = item.getBoundingClientRect();
+
+                if (isColliding(playerRect, itemRect)) {
+                    if (isBadLuck) {
+                        // 厄运伤害随难度指数增长
+                        const damage = Math.max(1, Math.floor(Math.pow(1.2, difficultyLevel - 1)));
+                        lives = Math.max(0, lives - damage);
+                        livesElement.textContent = '❤️'.repeat(lives);
+                        
+                        if (lives <= 0) {
+                            endGame();
+                        }
+                    } else {
+                        // 得分随难度增加但增长较慢
+                        const baseScore = 10;
+                        const scoreGain = Math.floor(baseScore * (1 + (difficultyLevel - 1) * 0.5));
+                        score += scoreGain;
+                        scoreElement.textContent = score;
+                    }
+                    item.remove();
+                    clearInterval(checkInterval);
+                }
+            }, 50); // 提高检测频率
+        }
+
+        function isColliding(rect1, rect2) {
+            const tolerance = 20; // 增加容差值
+            const playerCenter = {
+                x: rect1.left + rect1.width / 2,
+                y: rect1.top + rect1.height / 2
+            };
+            const itemCenter = {
+                x: rect2.left + rect2.width / 2,
+                y: rect2.top + rect2.height / 2
+            };
+            
+            const distance = Math.hypot(
+                playerCenter.x - itemCenter.x,
+                playerCenter.y - itemCenter.y
+            );
+            
+            // 使用更大的碰撞半径
+            const collisionRadius = Math.max(rect1.width, rect2.width) / 2 + tolerance;
+            return distance < collisionRadius;
+        }
+
+        function endGame() {
+            gameActive = false;
+            finalScoreElement.textContent = score;
+            gameOverScreen.style.display = 'block';
+            
+            if (gameLoop) {
+                clearTimeout(gameLoop);
+                gameLoop = null;
+            }
+        }
+
+        function restartGame() {
+            score = 0;
+            lives = 3;
+            gameActive = true;
+            gameTime = 0;
+            difficultyLevel = 1;
+            spawnRate = 1000;
+            itemSpeed = 3;
+            badLuckProbability = 0.3;
+            window.itemCounter = 0; // 重置物品计数器
+            
+            // 重置显示
+            scoreElement.textContent = '0';
+            livesElement.textContent = '❤️❤️❤️';
+            document.getElementById('difficulty-level').textContent = '1';
+            document.querySelector('.difficulty-fill').style.width = '0%';
+            document.querySelector('.difficulty-fill').textContent = '';
+            gameOverScreen.style.display = 'none';
+            
+            // 清除所有现有的祝福和厄运
+            document.querySelectorAll('.blessing, .bad-luck').forEach(item => item.remove());
+            
+            if (!gameLoop) {
+                spawnItems();
+            }
+        }
+
+        // 定时器
+        setInterval(createClouds, 10000); // 创建云朵
+        setInterval(updateDifficulty, 1000); // 更新难度
+        
+        // 动态调整生成速度
+        function spawnItems() {
+            if (gameActive) {
+                createItem();
+                gameLoop = setTimeout(spawnItems, spawnRate);
+            }
+        }
+
+        const style = document.createElement('style');
+        style.textContent = `
+            .back-button {
+                position: fixed;
+                top: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                padding: 8px 16px;
+                background: rgba(255, 255, 255, 0.95);
+                border: 1px solid rgba(0, 0, 0, 0.1);
+                border-radius: 8px;
+                text-decoration: none;
+                color: #000000;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-size: 14px;
+                transition: all 0.2s ease;
+                z-index: 1000;
+                backdrop-filter: blur(10px);
+            }
+
+            .back-button:hover {
+                transform: translateX(-50%) translateY(-2px);
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            }
+
+            @media (max-width: 768px) {
+                .back-button {
+                    top: 16px;
+                    padding: 6px 12px;
+                    font-size: 13px;
+                }
+
+                .difficulty {
+                    top: 70px;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // 初始化游戏
+        spawnItems();
+
+        // 添加性能优化
+        function optimizePerformance() {
+            // 使用 requestAnimationFrame 优化动画性能
+            let lastTime = 0;
+            const fpsInterval = 1000 / 60; // 目标 60fps
+
+            function animate(currentTime) {
+                if (!lastTime) lastTime = currentTime;
+                const elapsed = currentTime - lastTime;
+
+                if (elapsed > fpsInterval) {
+                    lastTime = currentTime - (elapsed % fpsInterval);
+                    
+                    // 更新游戏状态
+                    if (gameActive) {
+                        document.querySelectorAll('.blessing, .bad-luck').forEach(item => {
+                            checkCollision(item, item.classList.contains('bad-luck'));
+                        });
+                    }
+                }
+
+                requestAnimationFrame(animate);
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        // 初始化性能优化
+        optimizePerformance();
+
+        // 添加得分动画
+        function updateScore(newScore) {
+            const scoreSpan = document.getElementById('score');
+            scoreSpan.style.animation = 'none';
+            scoreSpan.offsetHeight; // 触发重排
+            scoreSpan.style.animation = 'scoreUpdate 0.5s ease-out';
+            scoreSpan.textContent = newScore;
+        }
+
+        // 添加新的动画样式
+        const additionalStyles = `
+            @keyframes scoreUpdate {
+                0% { transform: scale(1.5); }
+                100% { transform: scale(1); }
+            }
+
+            @keyframes fadeIn {
+                from { opacity: 0; transform: translate(-50%, -40%); }
+                to { opacity: 1; transform: translate(-50%, -50%); }
+            }
+
+            @keyframes slideIn {
+                from { transform: translateX(-100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+        `;
+
+        const styleSheet = document.createElement('style');
+        styleSheet.textContent = additionalStyles;
+        document.head.appendChild(styleSheet);
+    </script>
+</body>
+</html> 
