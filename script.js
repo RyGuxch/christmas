@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (bellSound) {
             bellSound.play()
                 .catch(error => {
-                    console.error('铃铛播放失败:', error);
+                    console.error('铃���播放失败:', error);
                 });
         }
     }
@@ -398,7 +398,7 @@ class Character {
         '🐶', '🐱', '🐰', '🦊', '🐼', '🐨',
         '🦁', '🐯', '🙈', '🦄', '🐲', '🐲',
         
-        // ���日相关
+        // 节日相关
         '🎅', '🎅🏻', '🎅🏼', '🎅🏽', '🎅🏾', '🎅🏿',
         '🤶', '🤶🏻', '🤶🏼', '🤶🏽', '🤶🏾', '🤶🏿',
         '🦌', '⛄', '🎄',
@@ -451,7 +451,7 @@ class Character {
             return;
         }
 
-        // 创建元���
+        // 创建元素
         const character = document.createElement('div');
         character.classList.add('character');
         character.setAttribute('data-sender-id', this.senderId);
@@ -674,7 +674,7 @@ class Character {
                 element.style.animation = '';
                 element.classList.remove('dragging');
                 
-                // 只有在没有拖动时才显示历史记录
+                // 只有���没有拖动时才显示历史记录
                 if (!isDragging && movedDistance < 5) {
                     this.showHistory();
                 }
@@ -1014,7 +1014,7 @@ class Character {
                     await this.sendPrivateMessage(messageText);
                 } catch (error) {
                     console.error('发送私聊消息失败:', error);
-                    alert('发送失败，请重试');
+                    alert('发��失败，请重试');
                     // 如果发送失败，恢复消息文本
                     input.value = messageText;
                 }
@@ -1123,7 +1123,7 @@ class Character {
                 timeElement.className = 'message-time';
                 timeElement.textContent = this.formatMessageTime(message.timestamp);
                 
-                // 将内容和时间添加到消息元素中
+                // 添加元素到消息容器
                 messageElement.appendChild(contentElement);
                 messageElement.appendChild(timeElement);
                 
@@ -1570,7 +1570,7 @@ function initMusicManagement() {
                 tab.style.display = tab.id === `${tabName}Tab` ? 'block' : 'none';
             });
             
-            // 如果切换到音乐标签，加载音乐列表
+            // ���果切换到音乐标签，加载音乐列表
             if (tabName === 'music') {
                 loadMusicList();
             }

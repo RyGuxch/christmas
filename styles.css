@@ -1239,7 +1239,7 @@ body {
 .chat-message {
     position: relative;
     padding: 12px 16px;
-    margin: 4px 0;
+    margin: 4px 40px;  /* 增加边距以容纳时间 */
     max-width: 80%;
     word-break: break-word;
     border-radius: 16px;
@@ -1252,16 +1252,20 @@ body {
 }
 
 .message-time {
+    position: absolute;
     font-size: 12px;
-    color: rgba(0, 0, 0, 0.4);
-    text-align: right;
+    top: 50%;
+    transform: translateY(-50%);
+    white-space: nowrap;
 }
 
 .chat-message.sent .message-time {
-    color: rgba(255, 255, 255, 0.7);
+    left: -40px;  /* 发送的消息，时间显示在左侧 */
+    color: rgba(0, 0, 0, 0.4);
 }
 
 .chat-message.received .message-time {
+    right: -40px;  /* 接收的消息，时间显示在右侧 */
     color: rgba(0, 0, 0, 0.4);
 }
 
@@ -1333,7 +1337,7 @@ body {
     }
 }
 
-/* 角色操作菜单样式 */
+/* ���色操作菜单样式 */
 .character-action-menu {
     position: fixed;
     background: rgba(255, 255, 255, 0.95);
@@ -1487,4 +1491,10 @@ body {
     color: #ff3b30;
     font-size: 12px;
     position: relative;
+}
+
+/* 添加平滑滚动效果 */
+.chat-messages {
+    scroll-behavior: smooth;
+    padding: 20px;
 } 
