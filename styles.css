@@ -1298,20 +1298,29 @@ body {
     right: -8px;
     background: #ff3b30;
     color: white;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
+    min-width: 18px;
+    height: 18px;
+    border-radius: 9px;
     font-size: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-    animation: pulse 1s infinite;
+    padding: 0 5px;
+    animation: notificationPulse 2s infinite;
+    box-shadow: 0 2px 4px rgba(255, 59, 48, 0.3);
+    z-index: 1000;
 }
 
-@keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.2); }
-    100% { transform: scale(1); }
+@keyframes notificationPulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+    100% {
+        transform: scale(1);
+    }
 }
 
 /* 角色操作菜单样式 */
@@ -1421,4 +1430,51 @@ body {
         opacity: 1;
         transform: translateY(0);
     }
+}
+
+/* 优化私聊窗口样式 */
+.private-chat-modal .modal-content {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 80vh;
+    max-height: 600px;
+}
+
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    scroll-behavior: smooth;
+}
+
+.chat-with {
+    font-size: 14px;
+    color: #666;
+    padding: 0 20px;
+}
+
+/* 添加未读消息分隔线 */
+.unread-separator {
+    text-align: center;
+    margin: 10px 0;
+    position: relative;
+}
+
+.unread-separator::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: 1px;
+    background: rgba(255, 59, 48, 0.3);
+}
+
+.unread-separator span {
+    background: white;
+    padding: 0 10px;
+    color: #ff3b30;
+    font-size: 12px;
+    position: relative;
 } 

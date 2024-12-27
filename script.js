@@ -396,7 +396,7 @@ class Character {
         
         // 动物
         '🐶', '🐱', '🐰', '🦊', '🐼', '🐨',
-        '🦁', '🐯', '🪿', '🦄', '🐲', '���',
+        '🦁', '🐯', '🙈', '🦄', '🐲', '🌟',
         
         // 节日相关
         '🎅', '🎅🏻', '🎅🏼', '🎅🏽', '🎅🏾', '🎅🏿',
@@ -451,7 +451,7 @@ class Character {
             return;
         }
 
-        // 创建新元素
+        // 创建元素
         const character = document.createElement('div');
         character.classList.add('character');
         character.setAttribute('data-sender-id', this.senderId);
@@ -555,6 +555,9 @@ class Character {
         character.addEventListener('touchmove', () => {
             clearTimeout(longPressTimer);
         });
+
+        // 在元素初始化完成后设置消息监听
+        this.setupMessageListener();
     }
 
     setInitialPosition() {
@@ -1012,7 +1015,7 @@ class Character {
                 }
             };
             
-            // 绑定发送按钮��件
+            // 绑定发送按钮事件
             sendButton.onclick = sendMessage;
             
             // 绑定回车发送
@@ -1043,6 +1046,12 @@ class Character {
                     closeBtn.click();
                 }
             };
+
+            // 打开私聊窗口时清除未读提示
+            this.clearUnreadNotification();
+
+            // 设置消息为已读
+            await this.markMessagesAsRead();
         } catch (error) {
             console.error('打开私聊失败:', error);
             alert('打开私聊失败，请重试');
@@ -1146,14 +1155,21 @@ class Character {
 
     // 显示未读通知
     showUnreadNotification() {
-        if (!this.element.querySelector('.chat-notification')) {
+        if (!this.element) return; // 确保元素存在
+        
+        const notification = this.element.querySelector('.chat-notification');
+        if (!notification) {
             const notification = document.createElement('div');
             notification.className = 'chat-notification';
+            notification.textContent = '1';
             this.element.appendChild(notification);
+        } else {
+            const count = parseInt(notification.textContent) + 1;
+            notification.textContent = count;
         }
     }
 
-    // 清除未读通知
+    // 清除未读消息提示
     clearUnreadNotification() {
         const notification = this.element.querySelector('.chat-notification');
         if (notification) {
@@ -1185,7 +1201,7 @@ class Character {
                 action: () => this.showHistory()
             },
             {
-                text: '更换表情',
+                text: '更换表��',
                 icon: '😊',
                 action: (e) => this.showEmojiSelector(e)
             }
@@ -1269,6 +1285,58 @@ class Character {
                 menu.style.top = `${rect.top - menuRect.height - 10}px`;
             }
         }
+    }
+
+    // 添加标记消息为已读的方法
+    async markMessagesAsRead() {
+        try {
+            const { getDatabase, ref, update } = await import('https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js');
+            const db = getDatabase();
+            const chatId = this.getChatId();
+            
+            // 获取所有未读消息
+            const unreadMessages = {};
+            const messagesRef = ref(db, `private-messages/${chatId}`);
+            const snapshot = await get(messagesRef);
+            
+            if (snapshot.exists()) {
+                snapshot.forEach(child => {
+                    const message = child.val();
+                    if (!message.read && message.senderId !== sessionUserId) {
+                        unreadMessages[`private-messages/${chatId}/${child.key}/read`] = true;
+                    }
+                });
+            }
+
+            // 批量更新消息状态
+            if (Object.keys(unreadMessages).length > 0) {
+                await update(ref(db), unreadMessages);
+            }
+        } catch (error) {
+            console.error('标记消息已读失败:', error);
+        }
+    }
+
+    // 修改 setupMessageListener 方法，移除 async
+    setupMessageListener() {
+        import('https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js')
+            .then(({ getDatabase, ref, onChildAdded }) => {
+                const db = getDatabase();
+                const chatId = this.getChatId();
+                const messagesRef = ref(db, `private-messages/${chatId}`);
+
+                // 监听新消息
+                onChildAdded(messagesRef, (snapshot) => {
+                    const message = snapshot.val();
+                    // 如果是接收到的新消息且未读
+                    if (message.senderId !== sessionUserId && !message.read) {
+                        this.showUnreadNotification();
+                    }
+                });
+            })
+            .catch(error => {
+                console.error('设置消息监听失败:', error);
+            });
     }
 }
 
