@@ -396,7 +396,7 @@ class Character {
         
         // 动物
         '🐶', '🐱', '🐰', '🦊', '🐼', '🐨',
-        '🦁', '🐯', '🐣', '🦄', '🐲', '🎄',
+        '🦁', '🐯', '����', '🦄', '🐲', '🎄',
         
         // 节日相关
         '🎅', '🎅🏻', '🎅🏼', '🎅🏽', '🎅🏾', '🎅🏿',
@@ -409,7 +409,7 @@ class Character {
         
         // 幻想角色
         '🧚‍♂️', '🧚‍♀️', '🧛‍♂️', '🧛‍♀️', '🧜‍♂️', '🧜‍♀️',
-        '🧞‍♂️', '🧞‍♀️', '🫎', '🧟‍♀️', '👼', '👻'
+        '🧞‍♂️', '🧟‍♀️', '🫎', '🧟‍♀️', '👼', '👻'
     ];
 
     static create(message, senderId) {
@@ -451,7 +451,7 @@ class Character {
             return;
         }
 
-        // 创建元素
+        // 创建��素
         const character = document.createElement('div');
         character.classList.add('character');
         character.setAttribute('data-sender-id', this.senderId);
@@ -556,7 +556,7 @@ class Character {
             clearTimeout(longPressTimer);
         });
 
-        // 在元素初始化完成后设��消息监听
+        // 在元素初始化完成后设置消息监听
         this.setupMessageListener();
     }
 
@@ -888,7 +888,7 @@ class Character {
                             Character.characters.delete(this.senderId);
                             modal.style.display = 'none';
                             
-                            // 示��户
+                            // 示户
                             alert('消息已清空');
                         }
                     } catch (error) {
@@ -1008,7 +1008,7 @@ class Character {
                 // 立即清空输入框并保持焦点
                 const messageText = text; // 保存消息文本
                 input.value = ''; // 立即清空
-                input.focus(); // 保��焦点
+                input.focus(); // 保持焦点
                 
                 try {
                     await this.sendPrivateMessage(messageText);
@@ -1091,7 +1091,7 @@ class Character {
         }
     }
 
-    async loadPrivateMessages(container) {
+    async loadPrivateMessages(messagesContainer) {
         try {
             const { getDatabase, ref, onChildAdded, query, orderByChild } = await import('https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js');
             const db = getDatabase();
@@ -1113,29 +1113,57 @@ class Character {
                 const messageElement = document.createElement('div');
                 messageElement.className = `chat-message ${message.senderId === sessionUserId ? 'sent' : 'received'}`;
                 
-                // 创建消息内容元素
+                // 添加消息内容
                 const contentElement = document.createElement('div');
                 contentElement.className = 'message-content';
                 contentElement.textContent = message.text;
-                
-                // 创建时间元素
-                const timeText = this.formatMessageTime(message.timestamp);
-                const timeElement = document.createElement('span');
-                timeElement.className = `message-time ${timeText.includes('昨天') ? 'long-timestamp' : ''}`;
-                timeElement.textContent = timeText;
-                
-                // 添加元素到消息容器
                 messageElement.appendChild(contentElement);
-                messageElement.appendChild(timeElement);
                 
-                container.appendChild(messageElement);
-                container.scrollTop = container.scrollHeight;
+                // 添加时间戳
+                const timeElement = document.createElement('span');
+                timeElement.className = 'message-time';
                 
-                // 标记消息为已读
-                if (message.senderId !== sessionUserId && !message.read) {
-                    this.markMessageAsRead(snapshot.key);
+                const now = new Date();
+                const messageDate = new Date(message.timestamp);
+                
+                // 如果是今天的消息
+                if (messageDate.toDateString() === now.toDateString()) {
+                    timeElement.textContent = messageDate.toLocaleTimeString('zh-CN', {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        hour12: false
+                    });
+                } else {
+                    // 如果是昨天或更早的消息
+                    timeElement.classList.add('long-timestamp');
+                    
+                    // 如果是昨天
+                    const yesterday = new Date(now);
+                    yesterday.setDate(yesterday.getDate() - 1);
+                    if (messageDate.toDateString() === yesterday.toDateString()) {
+                        timeElement.textContent = `昨天 ${messageDate.toLocaleTimeString('zh-CN', {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: false
+                        })}`;
+                    } else {
+                        // 其他日期
+                        timeElement.textContent = messageDate.toLocaleString('zh-CN', {
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            hour12: false
+                        });
+                    }
                 }
+                
+                messageElement.appendChild(timeElement);
+                messagesContainer.appendChild(messageElement);
             });
+
+            // 滚动到最新消息
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
         } catch (error) {
             console.error('加载私聊消息失败:', error);
         }
@@ -1392,7 +1420,7 @@ class Character {
             return '刚刚';
         }
         
-        // 如果是 Firebase 的 serverTimestamp，需要转换为毫秒
+        // 如��是 Firebase 的 serverTimestamp，需要转换为毫秒
         const date = new Date(typeof timestamp === 'number' ? timestamp : timestamp.toMillis());
         const now = new Date();
         
@@ -1409,21 +1437,23 @@ class Character {
         const yesterday = new Date(now);
         yesterday.setDate(yesterday.getDate() - 1);
         if (date.toDateString() === yesterday.toDateString()) {
-            return `昨天 ${date.toLocaleTimeString('zh-CN', { 
+            const timeText = `昨天 ${date.toLocaleTimeString('zh-CN', { 
                 hour: '2-digit', 
                 minute: '2-digit',
                 hour12: false
             })}`;
+            return `<span class="message-time long-timestamp">${timeText}</span>`;
         }
         
         // 其他日期显示完整日期和时间
-        return date.toLocaleString('zh-CN', {
+        const timeText = date.toLocaleString('zh-CN', {
             month: '2-digit',
             day: '2-digit',
             hour: '2-digit',
             minute: '2-digit',
             hour12: false
         });
+        return `<span class="message-time long-timestamp">${timeText}</span>`;
     }
 }
 
