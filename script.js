@@ -232,7 +232,7 @@ class GiftTrail {
             gift.style.opacity = '0';
         });
 
-        // 移除旧的礼物
+        // 移除旧的���物
         if (this.trail.length > this.maxTrail) {
             const oldGift = this.trail.shift();
             oldGift.remove();
@@ -481,7 +481,7 @@ class Character {
                     this.showActionMenu(e, true);
                 }
             } else {
-                // 显示其他用户操作菜单
+                // 显示其他用户操��菜单
                 this.showActionMenu(e, false);
             }
         });
@@ -1092,42 +1092,76 @@ class Character {
 
     async loadPrivateMessages(container) {
         try {
+            const { getDatabase, ref, onChildAdded, get, query, orderByChild, update } = 
+                await import('https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js');
+            
+            const db = getDatabase();
             const chatId = this.getChatId();
-            const { getDatabase, ref, onValue } = await import('https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js');
+            const messagesRef = ref(db, `private-messages/${chatId}`);
             
-            const database = getDatabase();
-            const chatRef = ref(database, `private-messages/${chatId}`);
+            // 清空容器
+            container.innerHTML = '';
             
-            // 移除之前的监听器
-            if (this.privateMessageListener) {
-                this.privateMessageListener();
-            }
+            // 获取所有消息
+            const snapshot = await get(query(messagesRef, orderByChild('timestamp')));
             
-            // 添加新的监听器
-            this.privateMessageListener = onValue(chatRef, (snapshot) => {
-                const messages = snapshot.val();
-                
-                if (!messages) {
-                    container.innerHTML = '<div class="no-messages">暂无消息</div>';
-                    return;
-                }
-                
-                container.innerHTML = '';
-                Object.values(messages)
-                    .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0))
-                    .forEach(msg => {
-                        const messageElement = document.createElement('div');
-                        messageElement.className = `chat-message ${msg.senderId === sessionUserId ? 'sent' : 'received'}`;
-                        messageElement.textContent = msg.text;
-                        container.appendChild(messageElement);
+            if (snapshot.exists()) {
+                const messages = [];
+                const updates = {};
+
+                snapshot.forEach((child) => {
+                    const message = child.val();
+                    // 如果是接收到的消息且未读，标记为已读
+                    if (message.senderId !== sessionUserId && !message.read) {
+                        updates[`private-messages/${chatId}/${child.key}/read`] = true;
+                    }
+                    messages.push({
+                        id: child.key,
+                        ...message
                     });
-                
+                });
+
+                // 批量更新已读状态
+                if (Object.keys(updates).length > 0) {
+                    await update(ref(db), updates);
+                }
+
+                // 按时间戳排序并渲染消息
+                messages.sort((a, b) => a.timestamp - b.timestamp);
+                messages.forEach(message => {
+                    const messageElement = document.createElement('div');
+                    messageElement.className = `chat-message ${
+                        message.senderId === sessionUserId ? 'sent' : 'received'
+                    }`;
+                    messageElement.textContent = message.text;
+                    container.appendChild(messageElement);
+                });
+
                 // 滚动到最新消息
                 container.scrollTop = container.scrollHeight;
+            }
+
+            // 设置新消息监听
+            return onChildAdded(messagesRef, (snapshot) => {
+                const message = snapshot.val();
+                const messageElement = document.createElement('div');
+                messageElement.className = `chat-message ${
+                    message.senderId === sessionUserId ? 'sent' : 'received'
+                }`;
+                messageElement.textContent = message.text;
+                container.appendChild(messageElement);
+                container.scrollTop = container.scrollHeight;
+
+                // 如果是接收到的新消息，立即标记为已读
+                if (message.senderId !== sessionUserId && !message.read) {
+                    update(ref(db), {
+                        [`private-messages/${chatId}/${snapshot.key}/read`]: true
+                    });
+                }
             });
         } catch (error) {
             console.error('加载私聊消息失败:', error);
-            container.innerHTML = '<div class="error-message">加载消息失败，请重试</div>';
+            throw error;
         }
     }
 
@@ -1201,7 +1235,7 @@ class Character {
                 action: () => this.showHistory()
             },
             {
-                text: '更换表��',
+                text: '更换表',
                 icon: '😊',
                 action: (e) => this.showEmojiSelector(e)
             }
@@ -1317,19 +1351,39 @@ class Character {
         }
     }
 
-    // 修改 setupMessageListener 方法，移除 async
+    // 修改 setupMessageListener 方法
     setupMessageListener() {
         import('https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js')
-            .then(({ getDatabase, ref, onChildAdded }) => {
+            .then(({ getDatabase, ref, onChildAdded, get, onValue }) => {
                 const db = getDatabase();
                 const chatId = this.getChatId();
                 const messagesRef = ref(db, `private-messages/${chatId}`);
 
+                // 使用 onValue 替代 get，这样可以实时响应消息状态的变化
+                onValue(messagesRef, (snapshot) => {
+                    if (snapshot.exists()) {
+                        let hasUnread = false;
+                        snapshot.forEach((child) => {
+                            const message = child.val();
+                            if (message.senderId !== sessionUserId && !message.read) {
+                                hasUnread = true;
+                            }
+                        });
+                        
+                        if (hasUnread) {
+                            this.showUnreadNotification();
+                        } else {
+                            this.clearUnreadNotification();
+                        }
+                    }
+                });
+
                 // 监听新消息
                 onChildAdded(messagesRef, (snapshot) => {
                     const message = snapshot.val();
-                    // 如果是接收到的新消息且未读
-                    if (message.senderId !== sessionUserId && !message.read) {
+                    // 只有新消息且未读时才显示通知
+                    if (message.senderId !== sessionUserId && !message.read && 
+                        message.timestamp > Date.now() - 1000) {
                         this.showUnreadNotification();
                     }
                 });
@@ -1374,7 +1428,7 @@ function initializeMessageSystem() {
         }
     });
 
-    // 监听发送按钮点击
+    // 监���发送按钮点击
     sendBtn.addEventListener('click', sendMessage);
 
     // 监听表单提交
@@ -1383,7 +1437,7 @@ function initializeMessageSystem() {
         sendMessage();
     });
 
-    // 模态框关���功能
+    // 模态框关闭功能
     if (closeModal && modal) {
         closeModal.addEventListener('click', () => {
             modal.style.display = 'none';
