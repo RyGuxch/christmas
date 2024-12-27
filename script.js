@@ -396,9 +396,9 @@ class Character {
         
         // 动物
         '🐶', '🐱', '🐰', '🦊', '🐼', '🐨',
-        '🦁', '🐯', '🙈', '🦄', '🐲', '���',
+        '🦁', '🐯', '🙈', '🦄', '🐲', '🐲',
         
-        // 节日相关
+        // ���日相关
         '🎅', '🎅🏻', '🎅🏼', '🎅🏽', '🎅🏾', '🎅🏿',
         '🤶', '🤶🏻', '🤶🏼', '🤶🏽', '🤶🏾', '🤶🏿',
         '🦌', '⛄', '🎄',
@@ -451,7 +451,7 @@ class Character {
             return;
         }
 
-        // 创建元素
+        // 创建元���
         const character = document.createElement('div');
         character.classList.add('character');
         character.setAttribute('data-sender-id', this.senderId);
@@ -481,7 +481,7 @@ class Character {
                     this.showActionMenu(e, true);
                 }
             } else {
-                // 显示其他用户操作���单
+                // 显示其他用户操作菜单
                 this.showActionMenu(e, false);
             }
         });
@@ -523,7 +523,7 @@ class Character {
             const x = e.touches[0].clientX - touchStartX;
             const y = e.touches[0].clientY - touchStartY;
             
-            // 确保不会超��屏幕边界
+            // 确保不会超出屏幕边界
             const maxX = window.innerWidth - character.offsetWidth;
             const maxY = window.innerHeight - character.offsetHeight;
             
@@ -565,7 +565,7 @@ class Character {
         const tree = document.querySelector('.christmas-tree');
         const treeRect = tree.getBoundingClientRect();
         
-        // 获取��息输入框的位置
+        // 获取消息输入框的位置
         const messageInput = document.querySelector('.message-input-container');
         const inputRect = messageInput.getBoundingClientRect();
         
@@ -1055,7 +1055,7 @@ class Character {
             // 打开私聊窗口时清除未读提示
             this.clearUnreadNotification();
 
-            // 设置消息为���读
+            // 设置消息为读
             await this.markMessagesAsRead();
         } catch (error) {
             console.error('打开私聊失败:', error);
@@ -1067,27 +1067,23 @@ class Character {
         if (!text.trim()) return;
 
         try {
-            // 导入所需的 Firebase 函数
             const { getDatabase, ref, push, serverTimestamp } = await import('https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js');
-            
-            // 获取数据库实例
             const database = getDatabase();
-            
-            // 生成聊天ID
             const chatId = this.getChatId();
-            
-            // 创建消息引用
             const messageRef = ref(database, `private-messages/${chatId}`);
+            
+            // 使用当前客户端时间作为临时时间戳
+            const clientTimestamp = Date.now();
             
             // 发送消息
             await push(messageRef, {
                 text: text.trim(),
                 senderId: sessionUserId,
-                timestamp: serverTimestamp(),
+                timestamp: clientTimestamp, // 先使用客户端时间
+                serverTimestamp: serverTimestamp(), // 同时保存服务器时间
                 read: false
             });
             
-            // 添加未读通知
             await this.addUnreadNotification();
         } catch (error) {
             console.error('发送私聊消息失败:', error);
@@ -1301,32 +1297,48 @@ class Character {
     }
 
     // 添加标记消息为已读的方法
-    async markMessagesAsRead() {
+    async markMessageAsRead(messageKey) {
         try {
             const { getDatabase, ref, update } = await import('https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js');
             const db = getDatabase();
             const chatId = this.getChatId();
             
-            // 获取所有未读消息
-            const unreadMessages = {};
-            const messagesRef = ref(db, `private-messages/${chatId}`);
-            const snapshot = await get(messagesRef);
-            
-            if (snapshot.exists()) {
-                snapshot.forEach(child => {
-                    const message = child.val();
-                    if (!message.read && message.senderId !== sessionUserId) {
-                        unreadMessages[`private-messages/${chatId}/${child.key}/read`] = true;
-                    }
-                });
-            }
-
-            // 批量更新消息状态
-            if (Object.keys(unreadMessages).length > 0) {
-                await update(ref(db), unreadMessages);
-            }
+            // 更新消息的已读状态
+            const updates = {};
+            updates[`private-messages/${chatId}/${messageKey}/read`] = true;
+            await update(ref(db), updates);
         } catch (error) {
             console.error('标记消息已读失败:', error);
+        }
+    }
+
+    // 添加批量标记消息已读的方法
+    async markMessagesAsRead() {
+        try {
+            const { getDatabase, ref, get, update } = await import('https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js');
+            const db = getDatabase();
+            const chatId = this.getChatId();
+            const messagesRef = ref(db, `private-messages/${chatId}`);
+            
+            // 获取所有消息
+            const snapshot = await get(messagesRef);
+            if (!snapshot.exists()) return;
+            
+            // 构建更新对象
+            const updates = {};
+            snapshot.forEach(child => {
+                const message = child.val();
+                if (message.senderId !== sessionUserId && !message.read) {
+                    updates[`private-messages/${chatId}/${child.key}/read`] = true;
+                }
+            });
+            
+            // 如果有需要更新���消息，执行更新
+            if (Object.keys(updates).length > 0) {
+                await update(ref(db), updates);
+            }
+        } catch (error) {
+            console.error('批量标记消息已读失败:', error);
         }
     }
 
@@ -1374,15 +1386,21 @@ class Character {
 
     // 添加时间格式化方法
     formatMessageTime(timestamp) {
-        const date = new Date(timestamp);
+        // 处理 serverTimestamp 的情况
+        if (!timestamp) {
+            return '刚刚';
+        }
+        
+        // 如果是 Firebase 的 serverTimestamp，需要转换为毫秒
+        const date = new Date(typeof timestamp === 'number' ? timestamp : timestamp.toMillis());
         const now = new Date();
-        const diff = now - date;
         
         // 如果是今天的消息，只显示时间
         if (date.toDateString() === now.toDateString()) {
             return date.toLocaleTimeString('zh-CN', { 
                 hour: '2-digit', 
-                minute: '2-digit'
+                minute: '2-digit',
+                hour12: false // 使用24小时制
             });
         }
         
@@ -1392,7 +1410,8 @@ class Character {
         if (date.toDateString() === yesterday.toDateString()) {
             return `昨天 ${date.toLocaleTimeString('zh-CN', { 
                 hour: '2-digit', 
-                minute: '2-digit'
+                minute: '2-digit',
+                hour12: false
             })}`;
         }
         
@@ -1401,7 +1420,8 @@ class Character {
             month: '2-digit',
             day: '2-digit',
             hour: '2-digit',
-            minute: '2-digit'
+            minute: '2-digit',
+            hour12: false
         });
     }
 }
