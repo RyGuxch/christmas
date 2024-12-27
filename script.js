@@ -396,7 +396,7 @@ class Character {
         
         // 动物
         '🐶', '🐱', '🐰', '🦊', '🐼', '🐨',
-        '🦁', '🐯', '����', '🦄', '🐲', '🎄',
+        '🦁', '🐯', '🐸', '🦄', '🐲', '🎄',
         
         // 节日相关
         '🎅', '🎅🏻', '🎅🏼', '🎅🏽', '🎅🏾', '🎅🏿',
@@ -451,7 +451,7 @@ class Character {
             return;
         }
 
-        // 创建��素
+        // 创建元素
         const character = document.createElement('div');
         character.classList.add('character');
         character.setAttribute('data-sender-id', this.senderId);
@@ -556,7 +556,7 @@ class Character {
             clearTimeout(longPressTimer);
         });
 
-        // 在元素初始化完成后设置消息监听
+        // 在元素初始化完成后设��消息监听
         this.setupMessageListener();
     }
 
@@ -674,7 +674,7 @@ class Character {
                 element.style.animation = '';
                 element.classList.remove('dragging');
                 
-                // 只有没有拖动才显示历史记录
+                // 只有没拖动才显示历史记录
                 if (!isDragging && movedDistance < 5) {
                     this.showHistory();
                 }
@@ -790,7 +790,7 @@ class Character {
             messageText.textContent = msg;
             messageElement.appendChild(messageText);
             
-            // 只有当前用户可以删除自己的消息
+            // 只有当前用户可��删除自己的消息
             if (this.senderId === sessionUserId) {
                 const deleteBtn = document.createElement('button');
                 deleteBtn.className = 'delete-message';
@@ -969,7 +969,7 @@ class Character {
             const { getAuth, signInAnonymously } = await import('https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js');
             const auth = getAuth();
             
-            // 如果用户未登录，进行匿名登录
+            // 如果用户未登录，��行匿名登录
             if (!auth.currentUser) {
                 await signInAnonymously(auth);
             }
@@ -1000,22 +1000,32 @@ class Character {
             // 加载历史消息
             await this.loadPrivateMessages(messagesContainer);
             
+            // 显示模态框
+            modal.style.display = 'flex';
+            input.focus();
+
+            // 确保在模态框显示后立即滚动到底部
+            requestAnimationFrame(() => {
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            });
+            
             // 修改发送消息处理
             const sendMessage = async () => {
                 const text = input.value.trim();
                 if (!text) return;
                 
                 // 立即清空输入框并保持焦点
-                const messageText = text; // 保存消息文本
-                input.value = ''; // 立即清空
-                input.focus(); // 保持焦点
+                const messageText = text;
+                input.value = '';
+                input.focus();
                 
                 try {
                     await this.sendPrivateMessage(messageText);
+                    // 发送后滚动到底部
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
                 } catch (error) {
                     console.error('发送私聊消息失败:', error);
                     alert('发送失败，请重试');
-                    // 如果发送失败，恢复消息文本
                     input.value = messageText;
                 }
             };
@@ -1029,10 +1039,6 @@ class Character {
                     sendMessage();
                 }
             };
-            
-            // 显示模态框
-            modal.style.display = 'flex';
-            input.focus();
             
             // 关闭按钮处理
             const closeBtn = modal.querySelector('.close-modal');
@@ -1079,12 +1085,19 @@ class Character {
             await push(messageRef, {
                 text: text.trim(),
                 senderId: sessionUserId,
-                timestamp: clientTimestamp, // 先使用客户端时间
-                serverTimestamp: serverTimestamp(), // 同时保存服务器时间
+                timestamp: clientTimestamp,
+                serverTimestamp: serverTimestamp(),
                 read: false
             });
             
+            // 添加未读提示
             await this.addUnreadNotification();
+            
+            // 滚动到底部
+            const messagesContainer = document.querySelector('.chat-messages');
+            if (messagesContainer) {
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
         } catch (error) {
             console.error('发送私聊消息失败:', error);
             throw error;
@@ -1160,9 +1173,12 @@ class Character {
                 
                 messageElement.appendChild(timeElement);
                 messagesContainer.appendChild(messageElement);
+                
+                // 添加滚动到底部
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
             });
 
-            // 滚动到最新消息
+            // 初始加载完成后也滚动到底部
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         } catch (error) {
             console.error('加载私聊消息失败:', error);
@@ -1420,7 +1436,7 @@ class Character {
             return '刚刚';
         }
         
-        // 如��是 Firebase 的 serverTimestamp，需要转换为毫秒
+        // 如果是 Firebase 的 serverTimestamp，需要转换为毫秒
         const date = new Date(typeof timestamp === 'number' ? timestamp : timestamp.toMillis());
         const now = new Date();
         
@@ -1601,7 +1617,7 @@ function initMusicManagement() {
                 tab.style.display = tab.id === `${tabName}Tab` ? 'block' : 'none';
             });
             
-            // 果切换到音乐标签，加载音乐列表
+            // 果切到音乐标签，加载音乐列表
             if (tabName === 'music') {
                 loadMusicList();
             }
