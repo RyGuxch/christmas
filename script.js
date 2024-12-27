@@ -76,7 +76,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (bellSound) {
             bellSound.play()
                 .catch(error => {
-                    console.error('铃���播放失败:', error);
+                    console.error('铃铛播放失败:', error);
                 });
         }
     }
@@ -396,7 +396,7 @@ class Character {
         
         // 动物
         '🐶', '🐱', '🐰', '🦊', '🐼', '🐨',
-        '🦁', '🐯', '🙈', '🦄', '🐲', '🐲',
+        '🦁', '🐯', '🐣', '🦄', '🐲', '🎄',
         
         // 节日相关
         '🎅', '🎅🏻', '🎅🏼', '🎅🏽', '🎅🏾', '🎅🏿',
@@ -523,7 +523,7 @@ class Character {
             const x = e.touches[0].clientX - touchStartX;
             const y = e.touches[0].clientY - touchStartY;
             
-            // 确保不会超出屏幕边界
+            // 确保不会超屏幕边界
             const maxX = window.innerWidth - character.offsetWidth;
             const maxY = window.innerHeight - character.offsetHeight;
             
@@ -556,7 +556,7 @@ class Character {
             clearTimeout(longPressTimer);
         });
 
-        // 在元素初始化完成后设置消息监听
+        // 在元素初始化完成后设��消息监听
         this.setupMessageListener();
     }
 
@@ -674,7 +674,7 @@ class Character {
                 element.style.animation = '';
                 element.classList.remove('dragging');
                 
-                // 只有���没有拖动时才显示历史记录
+                // 只有没有拖动才显示历史记录
                 if (!isDragging && movedDistance < 5) {
                     this.showHistory();
                 }
@@ -888,7 +888,7 @@ class Character {
                             Character.characters.delete(this.senderId);
                             modal.style.display = 'none';
                             
-                            // 提示用户
+                            // 示��户
                             alert('消息已清空');
                         }
                     } catch (error) {
@@ -1008,13 +1008,13 @@ class Character {
                 // 立即清空输入框并保持焦点
                 const messageText = text; // 保存消息文本
                 input.value = ''; // 立即清空
-                input.focus(); // 保持焦点
+                input.focus(); // 保��焦点
                 
                 try {
                     await this.sendPrivateMessage(messageText);
                 } catch (error) {
                     console.error('发送私聊消息失败:', error);
-                    alert('发��失败，请重试');
+                    alert('发送失败，请重试');
                     // 如果发送失败，恢复消息文本
                     input.value = messageText;
                 }
@@ -1119,9 +1119,10 @@ class Character {
                 contentElement.textContent = message.text;
                 
                 // 创建时间元素
-                const timeElement = document.createElement('div');
-                timeElement.className = 'message-time';
-                timeElement.textContent = this.formatMessageTime(message.timestamp);
+                const timeText = this.formatMessageTime(message.timestamp);
+                const timeElement = document.createElement('span');
+                timeElement.className = `message-time ${timeText.includes('昨天') ? 'long-timestamp' : ''}`;
+                timeElement.textContent = timeText;
                 
                 // 添加元素到消息容器
                 messageElement.appendChild(contentElement);
@@ -1210,7 +1211,7 @@ class Character {
                 action: () => this.showHistory()
             },
             {
-                text: '更换表',
+                text: '更换表情',
                 icon: '😊',
                 action: (e) => this.showEmojiSelector(e)
             }
@@ -1333,7 +1334,7 @@ class Character {
                 }
             });
             
-            // 如果有需要更新���消息，执行更新
+            // 如果有需要更新消息，执行更新
             if (Object.keys(updates).length > 0) {
                 await update(ref(db), updates);
             }
@@ -1400,7 +1401,7 @@ class Character {
             return date.toLocaleTimeString('zh-CN', { 
                 hour: '2-digit', 
                 minute: '2-digit',
-                hour12: false // 使用24小时制
+                hour12: false
             });
         }
         
@@ -1570,7 +1571,7 @@ function initMusicManagement() {
                 tab.style.display = tab.id === `${tabName}Tab` ? 'block' : 'none';
             });
             
-            // ���果切换到音乐标签，加载音乐列表
+            // 果切换到音乐标签，加载音乐列表
             if (tabName === 'music') {
                 loadMusicList();
             }

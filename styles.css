@@ -1254,9 +1254,10 @@ body {
 .message-time {
     position: absolute;
     font-size: 12px;
+    color: rgba(0, 0, 0, 0.4);
+    white-space: nowrap;
     top: 50%;
     transform: translateY(-50%);
-    white-space: nowrap;
 }
 
 .chat-message.sent .message-time {
@@ -1337,7 +1338,7 @@ body {
     }
 }
 
-/* ���色操作菜单样式 */
+/* 颜色操作菜单样式 */
 .character-action-menu {
     position: fixed;
     background: rgba(255, 255, 255, 0.95);
@@ -1497,4 +1498,28 @@ body {
 .chat-messages {
     scroll-behavior: smooth;
     padding: 20px;
+}
+
+/* 专门处理较长时间戳的样式 */
+.chat-message.sent .message-time.long-timestamp {
+    transform: translateY(-50%) scale(0.9); /* 稍微缩小字体 */
+    left: -65px; /* 为较长时间戳提供更多空间 */
+}
+
+.chat-message.received .message-time.long-timestamp {
+    transform: translateY(-50%) scale(0.9); /* 稍微缩小字体 */
+    right: -65px; /* 为较长时间戳提供更多空间 */
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+    .chat-message.sent .message-time.long-timestamp {
+        font-size: 11px;
+        left: -60px;
+    }
+    
+    .chat-message.received .message-time.long-timestamp {
+        font-size: 11px;
+        right: -60px;
+    }
 } 
