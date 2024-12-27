@@ -232,7 +232,7 @@ class GiftTrail {
             gift.style.opacity = '0';
         });
 
-        // 移除旧的���物
+        // 移除旧的礼物
         if (this.trail.length > this.maxTrail) {
             const oldGift = this.trail.shift();
             oldGift.remove();
@@ -396,7 +396,7 @@ class Character {
         
         // 动物
         '🐶', '🐱', '🐰', '🦊', '🐼', '🐨',
-        '🦁', '🐯', '🙈', '🦄', '🐲', '🌟',
+        '🦁', '🐯', '🙈', '🦄', '🐲', '���',
         
         // 节日相关
         '🎅', '🎅🏻', '🎅🏼', '🎅🏽', '🎅🏾', '🎅🏿',
@@ -409,7 +409,7 @@ class Character {
         
         // 幻想角色
         '🧚‍♂️', '🧚‍♀️', '🧛‍♂️', '🧛‍♀️', '🧜‍♂️', '🧜‍♀️',
-        '🧞‍♂️', '🧞‍♀️', '', '🧟‍♀️', '👼', '👻'
+        '🧞‍♂️', '🧞‍♀️', '🫎', '🧟‍♀️', '👼', '👻'
     ];
 
     static create(message, senderId) {
@@ -481,7 +481,7 @@ class Character {
                     this.showActionMenu(e, true);
                 }
             } else {
-                // 显示其他用户操��菜单
+                // 显示其他用户操作���单
                 this.showActionMenu(e, false);
             }
         });
@@ -523,7 +523,7 @@ class Character {
             const x = e.touches[0].clientX - touchStartX;
             const y = e.touches[0].clientY - touchStartY;
             
-            // 确保不会超出屏幕边界
+            // 确保不会超��屏幕边界
             const maxX = window.innerWidth - character.offsetWidth;
             const maxY = window.innerHeight - character.offsetHeight;
             
@@ -565,7 +565,7 @@ class Character {
         const tree = document.querySelector('.christmas-tree');
         const treeRect = tree.getBoundingClientRect();
         
-        // 获取消息输入框的位置
+        // 获取��息输入框的位置
         const messageInput = document.querySelector('.message-input-container');
         const inputRect = messageInput.getBoundingClientRect();
         
@@ -1000,18 +1000,23 @@ class Character {
             // 加载历史消息
             await this.loadPrivateMessages(messagesContainer);
             
-            // 发送消息处理
+            // 修改发送消息处理
             const sendMessage = async () => {
                 const text = input.value.trim();
                 if (!text) return;
                 
+                // 立即清空输入框并保持焦点
+                const messageText = text; // 保存消息文本
+                input.value = ''; // 立即清空
+                input.focus(); // 保持焦点
+                
                 try {
-                    await this.sendPrivateMessage(text);
-                    input.value = ''; // 清空输入框
-                    input.focus(); // 保持焦点
+                    await this.sendPrivateMessage(messageText);
                 } catch (error) {
                     console.error('发送私聊消息失败:', error);
                     alert('发送失败，请重试');
+                    // 如果发送失败，恢复消息文本
+                    input.value = messageText;
                 }
             };
             
@@ -1050,7 +1055,7 @@ class Character {
             // 打开私聊窗口时清除未读提示
             this.clearUnreadNotification();
 
-            // 设置消息为已读
+            // 设置消息为���读
             await this.markMessagesAsRead();
         } catch (error) {
             console.error('打开私聊失败:', error);
@@ -1092,76 +1097,50 @@ class Character {
 
     async loadPrivateMessages(container) {
         try {
-            const { getDatabase, ref, onChildAdded, get, query, orderByChild, update } = 
-                await import('https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js');
-            
+            const { getDatabase, ref, onChildAdded, query, orderByChild } = await import('https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js');
             const db = getDatabase();
             const chatId = this.getChatId();
             const messagesRef = ref(db, `private-messages/${chatId}`);
             
-            // 清空容器
-            container.innerHTML = '';
-            
-            // 获取所有消息
-            const snapshot = await get(query(messagesRef, orderByChild('timestamp')));
-            
-            if (snapshot.exists()) {
-                const messages = [];
-                const updates = {};
-
-                snapshot.forEach((child) => {
-                    const message = child.val();
-                    // 如果是接收到的消息且未读，标记为已读
-                    if (message.senderId !== sessionUserId && !message.read) {
-                        updates[`private-messages/${chatId}/${child.key}/read`] = true;
-                    }
-                    messages.push({
-                        id: child.key,
-                        ...message
-                    });
-                });
-
-                // 批量更新已读状态
-                if (Object.keys(updates).length > 0) {
-                    await update(ref(db), updates);
-                }
-
-                // 按时间戳排序并渲染消息
-                messages.sort((a, b) => a.timestamp - b.timestamp);
-                messages.forEach(message => {
-                    const messageElement = document.createElement('div');
-                    messageElement.className = `chat-message ${
-                        message.senderId === sessionUserId ? 'sent' : 'received'
-                    }`;
-                    messageElement.textContent = message.text;
-                    container.appendChild(messageElement);
-                });
-
-                // 滚动到最新消息
-                container.scrollTop = container.scrollHeight;
+            // 清除现有的监听器
+            if (this.privateMessageListener) {
+                this.privateMessageListener();
             }
-
-            // 设置新消息监听
-            return onChildAdded(messagesRef, (snapshot) => {
+            
+            // 按时间戳排序
+            const messagesQuery = query(messagesRef, orderByChild('timestamp'));
+            
+            this.privateMessageListener = onChildAdded(messagesQuery, (snapshot) => {
                 const message = snapshot.val();
+                if (!message) return;
+                
                 const messageElement = document.createElement('div');
-                messageElement.className = `chat-message ${
-                    message.senderId === sessionUserId ? 'sent' : 'received'
-                }`;
-                messageElement.textContent = message.text;
+                messageElement.className = `chat-message ${message.senderId === sessionUserId ? 'sent' : 'received'}`;
+                
+                // 创建消息内容元素
+                const contentElement = document.createElement('div');
+                contentElement.className = 'message-content';
+                contentElement.textContent = message.text;
+                
+                // 创建时间元素
+                const timeElement = document.createElement('div');
+                timeElement.className = 'message-time';
+                timeElement.textContent = this.formatMessageTime(message.timestamp);
+                
+                // 将内容和时间添加到消息元素中
+                messageElement.appendChild(contentElement);
+                messageElement.appendChild(timeElement);
+                
                 container.appendChild(messageElement);
                 container.scrollTop = container.scrollHeight;
-
-                // 如果是接收到的新消息，立即标记为已读
+                
+                // 标记消息为已读
                 if (message.senderId !== sessionUserId && !message.read) {
-                    update(ref(db), {
-                        [`private-messages/${chatId}/${snapshot.key}/read`]: true
-                    });
+                    this.markMessageAsRead(snapshot.key);
                 }
             });
         } catch (error) {
             console.error('加载私聊消息失败:', error);
-            throw error;
         }
     }
 
@@ -1359,7 +1338,7 @@ class Character {
                 const chatId = this.getChatId();
                 const messagesRef = ref(db, `private-messages/${chatId}`);
 
-                // 使用 onValue 替代 get，这样可以实时响应消息状态的变化
+                // 使用 onValue 替代 get，这样以实时响应消息状态的变化
                 onValue(messagesRef, (snapshot) => {
                     if (snapshot.exists()) {
                         let hasUnread = false;
@@ -1391,6 +1370,39 @@ class Character {
             .catch(error => {
                 console.error('设置消息监听失败:', error);
             });
+    }
+
+    // 添加时间格式化方法
+    formatMessageTime(timestamp) {
+        const date = new Date(timestamp);
+        const now = new Date();
+        const diff = now - date;
+        
+        // 如果是今天的消息，只显示时间
+        if (date.toDateString() === now.toDateString()) {
+            return date.toLocaleTimeString('zh-CN', { 
+                hour: '2-digit', 
+                minute: '2-digit'
+            });
+        }
+        
+        // 如果是昨天的消息
+        const yesterday = new Date(now);
+        yesterday.setDate(yesterday.getDate() - 1);
+        if (date.toDateString() === yesterday.toDateString()) {
+            return `昨天 ${date.toLocaleTimeString('zh-CN', { 
+                hour: '2-digit', 
+                minute: '2-digit'
+            })}`;
+        }
+        
+        // 其他日期显示完整日期和时间
+        return date.toLocaleString('zh-CN', {
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
     }
 }
 
@@ -1428,7 +1440,7 @@ function initializeMessageSystem() {
         }
     });
 
-    // 监���发送按钮点击
+    // 监发送按钮点击
     sendBtn.addEventListener('click', sendMessage);
 
     // 监听表单提交
