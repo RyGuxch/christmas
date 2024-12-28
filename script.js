@@ -22,15 +22,25 @@ function generateUserId() {
 // 为每个会话创建唯一的用户ID
 const sessionUserId = generateUserId();
 
-// 雪花生成
+// 添加全局状态控制
+const state = {
+    isRainbowMode: false,
+    isGravityMode: false,
+    isTreeColorMode: false,
+    chasingPairs: new Set()
+};
+
+// 修改雪花生成函数
 function createSnowflake() {
     const snowflake = document.createElement('div');
     snowflake.classList.add('snowflake');
-    snowflake.innerHTML = '❄';
+    const emojis = ['🎈', '🎉', '🎊', '✨', '💫', '⭐', '🌟', '💥', '🎵', '🎶'];
+    snowflake.innerHTML = emojis[Math.floor(Math.random() * emojis.length)];
     snowflake.style.left = Math.random() * 100 + 'vw';
     snowflake.style.animationDuration = Math.random() * 3 + 2 + 's';
     snowflake.style.opacity = Math.random();
-    snowflake.style.fontSize = Math.random() * 10 + 10 + 'px';
+    snowflake.style.fontSize = Math.random() * 20 + 15 + 'px';
+    snowflake.style.filter = `hue-rotate(${Math.random() * 360}deg)`;
     
     document.querySelector('.snow-container').appendChild(snowflake);
     
@@ -107,7 +117,7 @@ const blessings = [
     "🎉 祝你新的一年平安喜乐",
     "⭐ 愿你前程似锦，未来可期",
     "🏮 新年新气象，好运马上来",
-    "💫 愿你新年梦想成真",
+    "💫 愿你新年梦想成",
     "🎀 祝你新年幸福安康",
     "🌟 愿新的一年充满希望",
     "💝 新年送你一份温暖祝福",
@@ -219,7 +229,7 @@ class GiftTrail {
         this.container.appendChild(gift);
         this.trail.push(gift);
 
-        // 添加下落动画
+        // 添加落动画
         requestAnimationFrame(() => {
             gift.style.transform = `
                 translate(
@@ -387,7 +397,7 @@ class Character {
         
         // 有趣的表情
         '🥳', '🤪', '🤓', '🧐', '🤠', '🥸',
-        '😎', '🤡', '👻', '🤖', '👾', '👽',
+        '😎', '🤡', '👻', '🤖', '🫠', '👽',
         
         // 职业和角色
         '🧙‍♂️', '🧙‍♀️', '🧝‍♂️', '🧝‍♀️', '🦹‍♂️', '🦹‍♀️',
@@ -583,7 +593,7 @@ class Character {
         this.element.style.left = `${randomX}px`;
         this.element.style.top = `${randomY}px`;
         
-        // 保存位���
+        // 保存位置
         this.savePosition();
     }
 
@@ -626,7 +636,7 @@ class Character {
         element.addEventListener('mousedown', (e) => {
             if (e.button !== 0) return;
             isDragging = false; // 初始设置为非拖动状态
-            movedDistance = 0; // 重置移���距离
+            movedDistance = 0; // 重置移动距离
             startX = e.clientX;
             startY = e.clientY;
             
@@ -854,7 +864,7 @@ class Character {
         if (this.senderId === sessionUserId) {
             clearAllBtn.style.display = 'block';
             clearAllBtn.onclick = async () => {
-                if (confirm('确定要清空所有消息吗？此操作不可恢复！')) {
+                if (confirm('要清空所有消息吗？此操作不可恢复！')) {
                     try {
                         // 导入所需的 Firebase 函数
                         const { ref, get, remove, getDatabase } = await import('https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js');
@@ -867,7 +877,7 @@ class Character {
                             const messages = snapshot.val();
                             const deletePromises = [];
                             
-                            // 找出属于当前用户的所有消息
+                            // 找出属于当前用户所有消息
                             Object.entries(messages).forEach(([key, message]) => {
                                 if (message.senderId === this.senderId) {
                                     deletePromises.push(remove(ref(database, `messages/${key}`)));
@@ -889,7 +899,7 @@ class Character {
                             modal.style.display = 'none';
                             
                             // 示户
-                            alert('消息已清���');
+                            alert('消息已清空');
                         }
                     } catch (error) {
                         console.error('清空消息失败:', error);
@@ -1078,7 +1088,7 @@ class Character {
             const chatId = this.getChatId();
             const messageRef = ref(database, `private-messages/${chatId}`);
             
-            // 使用当前客户端时间作为临时时间戳
+            // 用当前客户端时间作为临时时间戳
             const clientTimestamp = Date.now();
             
             // 发送消息
@@ -1692,7 +1702,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 }); 
 
-// 添加移动端手势支持
+// 添加移动��手势支持
 document.addEventListener('DOMContentLoaded', () => {
     let touchStartY = 0;
     let touchStartTime = 0;
@@ -1755,3 +1765,566 @@ function optimizeForMobile() {
 
 // 页面加载时初始化移动端优化
 window.addEventListener('load', optimizeForMobile); 
+
+// 添加键盘控制
+document.addEventListener('keydown', (e) => {
+    switch(e.key.toLowerCase()) {
+        case 'r':
+            state.isRainbowMode = !state.isRainbowMode;
+            document.body.style.animation = state.isRainbowMode ? 
+                'rainbow-bg 5s linear infinite' : 'none';
+            break;
+        case 'g':
+            state.isGravityMode = !state.isGravityMode;
+            document.querySelectorAll('.character').forEach(char => {
+                if (state.isGravityMode) {
+                    const bottom = window.innerHeight - 100;
+                    char.style.transition = 'top 1s ease';
+                    char.style.top = `${bottom}px`;
+                } else {
+                    char.style.transition = 'top 1s ease';
+                    const savedPosition = localStorage.getItem(`character_position_${char.dataset.senderId}`);
+                    if (savedPosition) {
+                        const position = JSON.parse(savedPosition);
+                        char.style.top = position.top;
+                    }
+                }
+            });
+            break;
+        case 'c':
+            state.isTreeColorMode = !state.isTreeColorMode;
+            const tree = document.querySelector('.tree-body');
+            if (tree) {
+                if (state.isTreeColorMode) {
+                    startTreeColorChange();
+                } else {
+                    stopTreeColorChange();
+                }
+            }
+            break;
+        case 'b':
+            createCrazyAnimation();
+            break;
+    }
+});
+
+// 角色追逐效果
+function startCharacterChasing() {
+    setInterval(() => {
+        const characters = Array.from(document.querySelectorAll('.character'));
+        if (characters.length < 2) return;
+
+        if (Math.random() < 0.3 && state.chasingPairs.size < 2) {
+            const chaser = characters[Math.floor(Math.random() * characters.length)];
+            const target = characters[Math.floor(Math.random() * characters.length)];
+            
+            if (chaser !== target && !state.chasingPairs.has(chaser) && !state.chasingPairs.has(target)) {
+                state.chasingPairs.add(chaser);
+                state.chasingPairs.add(target);
+                
+                let startPos = {
+                    x: parseFloat(chaser.style.left),
+                    y: parseFloat(chaser.style.top)
+                };
+
+                const chase = () => {
+                    if (!state.chasingPairs.has(chaser)) return;
+
+                    const targetRect = target.getBoundingClientRect();
+                    const chaserRect = chaser.getBoundingClientRect();
+                    
+                    const dx = targetRect.left - chaserRect.left;
+                    const dy = targetRect.top - chaserRect.top;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    if (distance < 100) {
+                        triggerInteraction(chaser, target);
+                        return;
+                    }
+                    
+                    // 更平滑的移动
+                    const speed = 3;
+                    const vx = (dx / distance) * speed;
+                    const vy = (dy / distance) * speed;
+                    
+                    const newX = parseFloat(chaser.style.left) + vx;
+                    const newY = parseFloat(chaser.style.top) + vy;
+                    
+                    chaser.style.left = `${newX}px`;
+                    chaser.style.top = `${newY}px`;
+                    
+                    requestAnimationFrame(chase);
+                };
+                
+                chase();
+            }
+        }
+    }, 3000);
+}
+
+// 角色互动动画
+function triggerInteraction(char1, char2) {
+    const animations = ['crazySpinDance', 'crazyShakeDance', 'crazyBounceDance', 'crazyFlipDance'];
+    const animation = animations[Math.floor(Math.random() * animations.length)];
+    
+    // 添加跳舞类以暂停悬浮
+    char1.classList.add('dancing');
+    char2.classList.add('dancing');
+    
+    // 随机互动消息
+    const interactions = [
+        ['Hi~', 'Hello!'],
+        ['跳舞吗？', '好啊！'],
+        ['新年快乐！', '你也是！'],
+        ['一起玩！', '来啊！'],
+        ['恭喜发财！', '红包拿来！']
+    ];
+    const interaction = interactions[Math.floor(Math.random() * interactions.length)];
+    
+    // 显示对话气泡
+    showMessageBubble(char1, interaction[0]);
+    setTimeout(() => showMessageBubble(char2, interaction[1]), 500);
+    
+    // 播放动画
+    char1.style.animation = `${animation} 2s ease`;
+    char2.style.animation = `${animation} 2s ease`;
+    
+    // 添加互动特效
+    createInteractionEffect(char1, char2);
+    
+    setTimeout(() => {
+        // 返回原位并恢复悬浮动画
+        returnToOriginalPosition(char1);
+        returnToOriginalPosition(char2);
+        state.chasingPairs.delete(char1);
+        state.chasingPairs.delete(char2);
+    }, 2000);
+}
+
+// 显示对话气泡
+function showMessageBubble(char, text) {
+    const bubble = document.createElement('div');
+    bubble.className = 'message-bubble';
+    bubble.textContent = text;
+    char.appendChild(bubble);
+    
+    setTimeout(() => bubble.remove(), 2000);
+}
+
+// 创建互动特效
+function createInteractionEffect(char1, char2) {
+    const effects = ['✨', '💫', '🌟', '💕', '🎵'];
+    const positions = getPositionsBetween(char1, char2);
+    
+    positions.forEach((pos, i) => {
+        setTimeout(() => {
+            const effect = document.createElement('div');
+            effect.className = 'dance-effect';
+            effect.textContent = effects[Math.floor(Math.random() * effects.length)];
+            effect.style.left = `${pos.x}px`;
+            effect.style.top = `${pos.y}px`;
+            document.body.appendChild(effect);
+            
+            setTimeout(() => effect.remove(), 1000);
+        }, i * 100);
+    });
+}
+
+// 计算两个角色之间的位置点
+function getPositionsBetween(char1, char2) {
+    const rect1 = char1.getBoundingClientRect();
+    const rect2 = char2.getBoundingClientRect();
+    const positions = [];
+    const steps = 5;
+    
+    for (let i = 0; i <= steps; i++) {
+        positions.push({
+            x: rect1.left + (rect2.left - rect1.left) * (i / steps),
+            y: rect1.top + (rect2.top - rect1.top) * (i / steps)
+        });
+    }
+    
+    return positions;
+}
+
+// 返回原位
+function returnToOriginalPosition(char) {
+    const savedPosition = localStorage.getItem(`character_position_${char.dataset.senderId}`);
+    if (savedPosition) {
+        const position = JSON.parse(savedPosition);
+        char.style.transition = 'all 1s ease';
+        char.style.left = position.left;
+        char.style.top = position.top;
+        
+        // 恢复原有的悬浮动画
+        setTimeout(() => {
+            char.style.transition = '';
+            char.classList.remove('dancing');
+            char.style.animation = 'float 3s ease-in-out infinite';
+        }, 1000);
+    }
+}
+
+// 修改舞蹈动画相关的样式
+const danceStyles = document.createElement('style');
+danceStyles.textContent = `
+    @keyframes spin {
+        0% { transform: rotate(0deg) scale(1); }
+        50% { transform: rotate(180deg) scale(1.2); }
+        100% { transform: rotate(360deg) scale(1); }
+    }
+
+    @keyframes shake {
+        0%, 100% { transform: translateX(0) rotate(0deg); }
+        25% { transform: translateX(-15px) rotate(-15deg); }
+        75% { transform: translateX(15px) rotate(15deg); }
+    }
+
+    @keyframes bounce {
+        0%, 100% { transform: translateY(0) scale(1); }
+        50% { transform: translateY(-50px) scale(1.2) rotate(180deg); }
+    }
+
+    @keyframes flip {
+        0% { transform: perspective(400px) rotateY(0) scale(1); }
+        50% { transform: perspective(400px) rotateY(180deg) scale(1.2); }
+        100% { transform: perspective(400px) rotateY(360deg) scale(1); }
+    }
+
+    .dance-effect {
+        position: absolute;
+        pointer-events: none;
+        font-size: 24px;
+        animation: effectFade 1s forwards;
+    }
+
+    @keyframes effectFade {
+        0% { transform: translateY(0) scale(0); opacity: 0; }
+        50% { transform: translateY(-20px) scale(1.2); opacity: 1; }
+        100% { transform: translateY(-40px) scale(1); opacity: 0; }
+    }
+
+    .message-bubble {
+        background: rgba(255, 255, 255, 0.9);
+        padding: 8px 12px;
+        border-radius: 12px;
+        font-size: 14px;
+        position: absolute;
+        top: -40px;
+        left: 50%;
+        transform: translateX(-50%);
+        white-space: nowrap;
+        animation: bubblePop 2s forwards;
+        pointer-events: none;
+    }
+
+    @keyframes bubblePop {
+        0% { transform: translateX(-50%) scale(0); opacity: 0; }
+        20% { transform: translateX(-50%) scale(1.2); opacity: 1; }
+        80% { transform: translateX(-50%) scale(1); opacity: 1; }
+        100% { transform: translateX(-50%) scale(0.8); opacity: 0; }
+    }
+`;
+document.head.appendChild(danceStyles);
+
+// 修改角色的基础样式
+const characterStyles = document.createElement('style');
+characterStyles.textContent = `
+    .character {
+        transition: all 0.3s ease;
+        animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-15px); }
+    }
+
+    /* 疯狂旋转舞蹈 */
+    @keyframes spinDance {
+        0% { transform: scale(1) rotate(0deg) translateY(0); }
+        25% { transform: scale(1.4) rotate(180deg) translateY(-40px); }
+        50% { transform: scale(0.8) rotate(360deg) translateY(20px); }
+        75% { transform: scale(1.2) rotate(540deg) translateY(-30px); }
+        100% { transform: scale(1) rotate(720deg) translateY(0); }
+    }
+
+    /* 弹跳舞蹈 */
+    @keyframes bounceDance {
+        0%, 100% { transform: scale(1) translateY(0); }
+        25% { transform: scale(1.3) translateY(-50px) rotate(20deg); }
+        50% { transform: scale(0.8) translateY(0) rotate(-20deg); }
+        75% { transform: scale(1.2) translateY(-30px) rotate(20deg); }
+    }
+
+    /* 摇摆舞蹈 */
+    @keyframes swingDance {
+        0% { transform: translateX(0) rotate(0deg) scale(1); }
+        25% { transform: translateX(-30px) rotate(-30deg) scale(1.2); }
+        50% { transform: translateX(0) rotate(0deg) scale(0.9); }
+        75% { transform: translateX(30px) rotate(30deg) scale(1.2); }
+        100% { transform: translateX(0) rotate(0deg) scale(1); }
+    }
+
+    /* 疯狂抖动舞蹈 */
+    @keyframes crazyShake {
+        0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1); }
+        20% { transform: translate(-20px, -15px) rotate(-20deg) scale(1.3); }
+        40% { transform: translate(15px, 10px) rotate(15deg) scale(0.8); }
+        60% { transform: translate(-10px, -20px) rotate(-30deg) scale(1.2); }
+        80% { transform: translate(20px, 15px) rotate(20deg) scale(0.9); }
+    }
+
+    .dance-effect {
+        position: absolute;
+        pointer-events: none;
+        font-size: 24px;
+        animation: effectFade 1s forwards;
+        z-index: 1000;
+    }
+
+    @keyframes effectFade {
+        0% { transform: translateY(0) scale(0); opacity: 0; }
+        50% { transform: translateY(-20px) scale(1.2); opacity: 1; }
+        100% { transform: translateY(-40px) scale(1); opacity: 0; }
+    }
+`;
+document.head.appendChild(characterStyles);
+
+// 初始化函数
+function initializeDanceEffects() {
+    // 移除之前可能存在的事件监听器
+    document.removeEventListener('keypress', handleKeyPress);
+    // 添加新的事件监听器
+    document.addEventListener('keypress', handleKeyPress);
+    
+    // 初始化所有角色的悬浮效果
+    document.querySelectorAll('.character').forEach(char => {
+        char.style.animation = 'float 3s ease-in-out infinite';
+    });
+}
+
+// 键盘事件处理函数
+function handleKeyPress(e) {
+    if (e.key.toLowerCase() === 'q') {
+        state.isDanceMode = !state.isDanceMode;
+        document.querySelectorAll('.character').forEach(char => {
+            if (state.isDanceMode) {
+                startRandomDance(char);
+                // 播放音效
+                const bellSound = document.getElementById('bellSound');
+                if (bellSound) {
+                    bellSound.currentTime = 0;
+                    bellSound.play().catch(err => console.log('音效播放失败:', err));
+                }
+            } else {
+                stopDanceEffects(char);
+                char.style.animation = 'float 3s ease-in-out infinite';
+            }
+        });
+    }
+}
+
+// 修改舞蹈效果函数
+function startRandomDance(char) {
+    if (!char) return;
+    
+    // 清除之前的效果
+    stopDanceEffects(char);
+    
+    const dances = [
+        { name: 'spinDance', duration: 2 },
+        { name: 'bounceDance', duration: 1.5 },
+        { name: 'swingDance', duration: 1.8 },
+        { name: 'crazyShake', duration: 1.6 }
+    ];
+    
+    // 为每个角色随机选择一个舞蹈动画
+    const dance = dances[Math.floor(Math.random() * dances.length)];
+    char.style.animation = `${dance.name} ${dance.duration}s infinite`;
+
+    const effects = ['🎵', '🎶', '💃', '🕺', '✨', '💫', '🌟', '💥', '🎪', '🎭'];
+    
+    // 创建持续的特效
+    function createEffect() {
+        if (!state.isDanceMode) return;
+
+        const effect = document.createElement('div');
+        effect.className = 'dance-effect';
+        effect.textContent = effects[Math.floor(Math.random() * effects.length)];
+        
+        const rect = char.getBoundingClientRect();
+        const offsetX = Math.random() * 60 - 30;
+        const offsetY = Math.random() * 40 - 20;
+        
+        effect.style.left = `${rect.left + rect.width/2 + offsetX}px`;
+        effect.style.top = `${rect.top + rect.height/2 + offsetY}px`;
+        effect.style.transform = `rotate(${Math.random() * 360}deg)`;
+        
+        document.body.appendChild(effect);
+        setTimeout(() => effect.remove(), 1000);
+    }
+
+    // 持续创建特效
+    char.effectInterval = setInterval(createEffect, 300);
+}
+
+// 停止舞蹈特效
+function stopDanceEffects(char) {
+    if (char.effectInterval) {
+        clearInterval(char.effectInterval);
+        char.effectInterval = null;
+    }
+    
+    // 移除所有相关的特效元素
+    document.querySelectorAll('.dance-effect').forEach(effect => {
+        const rect = char.getBoundingClientRect();
+        const effectRect = effect.getBoundingClientRect();
+        if (Math.abs(effectRect.left - rect.left) < 100) {
+            effect.remove();
+        }
+    });
+}
+
+// 在 DOM 加载完成后初始化
+document.addEventListener('DOMContentLoaded', () => {
+    initializeDanceEffects();
+});
+
+// 圣诞树变色效果
+let treeColorInterval;
+function startTreeColorChange() {
+    const tree = document.querySelector('.tree-body');
+    treeColorInterval = setInterval(() => {
+        tree.style.borderBottomColor = `hsl(${Math.random() * 360}, 70%, 50%)`;
+    }, 100);
+}
+
+function stopTreeColorChange() {
+    clearInterval(treeColorInterval);
+    document.querySelector('.tree-body').style.borderBottomColor = '';
+}
+
+// 疯狂全屏动画
+function createCrazyAnimation() {
+    const container = document.createElement('div');
+    container.className = 'crazy-animation';
+    document.body.appendChild(container);
+
+    // 创建更多的粒子
+    for (let i = 0; i < 200; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'crazy-particle';
+        
+        // 随机粒子类型
+        const types = ['⭐', '✨', '💫', '🌟', '⚡', '🎉', '🎊'];
+        particle.textContent = types[Math.floor(Math.random() * types.length)];
+        
+        // 随机起始位置
+        particle.style.left = `${Math.random() * 100}vw`;
+        particle.style.top = `${Math.random() * 100}vh`;
+        
+        // 随机动画延迟和持续时间
+        particle.style.animationDelay = `${Math.random() * 2}s`;
+        particle.style.animationDuration = `${1 + Math.random() * 2}s`;
+        
+        container.appendChild(particle);
+    }
+
+    // 播放音效
+    const bellSound = document.getElementById('bellSound');
+    if (bellSound) {
+        bellSound.currentTime = 0;
+        bellSound.play().catch(err => console.log('音效播放失败:', err));
+    }
+
+    setTimeout(() => container.remove(), 3000);
+}
+
+// 添加CSS样式
+const crazyStyles = document.createElement('style');
+crazyStyles.textContent = `
+    @keyframes rainbow-bg {
+        0% { background: hsl(0, 80%, 80%); }
+        20% { background: hsl(72, 80%, 80%); }
+        40% { background: hsl(144, 80%, 80%); }
+        60% { background: hsl(216, 80%, 80%); }
+        80% { background: hsl(288, 80%, 80%); }
+        100% { background: hsl(360, 80%, 80%); }
+    }
+
+    .menu-link {
+        transition: all 0.3s ease;
+    }
+
+    .menu-link:hover {
+        animation: menuShake 0.5s infinite;
+    }
+
+    @keyframes menuShake {
+        0%, 100% { transform: translateX(0) rotate(0); }
+        25% { transform: translateX(-5px) rotate(-5deg); }
+        75% { transform: translateX(5px) rotate(5deg); }
+    }
+
+    .character {
+        transition: all 0.3s ease;
+    }
+
+    .character:hover {
+        transform: scale(1.2) rotate(360deg);
+        filter: hue-rotate(360deg);
+    }
+
+    .blessing {
+        animation: rainbowText 5s linear infinite !important;
+    }
+
+    @keyframes rainbowText {
+        0% { color: #ff0000; }
+        16.666% { color: #ff8000; }
+        33.333% { color: #ffff00; }
+        50% { color: #00ff00; }
+        66.666% { color: #0000ff; }
+        83.333% { color: #8000ff; }
+        100% { color: #ff0000; }
+    }
+
+    .crazy-animation {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        pointer-events: none;
+        z-index: 9999;
+    }
+
+    .crazy-particle {
+        position: absolute;
+        font-size: 24px;
+        pointer-events: none;
+        animation: particleFly 3s ease-out forwards;
+    }
+
+    @keyframes particleFly {
+        0% {
+            transform: scale(0) rotate(0deg);
+            opacity: 0;
+        }
+        10% {
+            opacity: 1;
+        }
+        100% {
+            transform: scale(2) rotate(360deg) translate(${Math.random() * 200 - 100}px, ${Math.random() * 200 - 100}px);
+            opacity: 0;
+        }
+    }
+`;
+
+document.head.appendChild(crazyStyles);
+
+// 初始化
+document.addEventListener('DOMContentLoaded', () => {
+    startCharacterChasing();
+}); 
