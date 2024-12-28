@@ -556,7 +556,7 @@ class Character {
             clearTimeout(longPressTimer);
         });
 
-        // 在元素初始化完成后设��消息监听
+        // 在元素初始化完成后设置消息监听
         this.setupMessageListener();
     }
 
@@ -583,7 +583,7 @@ class Character {
         this.element.style.left = `${randomX}px`;
         this.element.style.top = `${randomY}px`;
         
-        // 保存位置
+        // 保存位���
         this.savePosition();
     }
 
@@ -626,7 +626,7 @@ class Character {
         element.addEventListener('mousedown', (e) => {
             if (e.button !== 0) return;
             isDragging = false; // 初始设置为非拖动状态
-            movedDistance = 0; // 重置移动距离
+            movedDistance = 0; // 重置移���距离
             startX = e.clientX;
             startY = e.clientY;
             
@@ -790,7 +790,7 @@ class Character {
             messageText.textContent = msg;
             messageElement.appendChild(messageText);
             
-            // 只有当前用户可��删除自己的消息
+            // 只有当前用户可删除自己的消息
             if (this.senderId === sessionUserId) {
                 const deleteBtn = document.createElement('button');
                 deleteBtn.className = 'delete-message';
@@ -889,7 +889,7 @@ class Character {
                             modal.style.display = 'none';
                             
                             // 示户
-                            alert('消息已清空');
+                            alert('消息已清���');
                         }
                     } catch (error) {
                         console.error('清空消息失败:', error);
@@ -969,7 +969,7 @@ class Character {
             const { getAuth, signInAnonymously } = await import('https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js');
             const auth = getAuth();
             
-            // 如果用户未登录，��行匿名登录
+            // 如果用户未登录，行匿名登录
             if (!auth.currentUser) {
                 await signInAnonymously(auth);
             }
@@ -1213,13 +1213,15 @@ class Character {
         
         const notification = this.element.querySelector('.chat-notification');
         if (!notification) {
+            // 创建新的通知元素
             const notification = document.createElement('div');
             notification.className = 'chat-notification';
             notification.textContent = '1';
             this.element.appendChild(notification);
         } else {
-            const count = parseInt(notification.textContent) + 1;
-            notification.textContent = count;
+            // 获取当前数量并增加
+            const currentCount = parseInt(notification.textContent) || 0;
+            notification.textContent = currentCount + 1;
         }
     }
 
@@ -1398,16 +1400,24 @@ class Character {
                 // 使用 onValue 替代 get，这样以实时响应消息状态的变化
                 onValue(messagesRef, (snapshot) => {
                     if (snapshot.exists()) {
-                        let hasUnread = false;
+                        let unreadCount = 0;
                         snapshot.forEach((child) => {
                             const message = child.val();
                             if (message.senderId !== sessionUserId && !message.read) {
-                                hasUnread = true;
+                                unreadCount++;
                             }
                         });
                         
-                        if (hasUnread) {
-                            this.showUnreadNotification();
+                        if (unreadCount > 0) {
+                            const notification = this.element.querySelector('.chat-notification');
+                            if (notification) {
+                                notification.textContent = unreadCount;
+                            } else {
+                                const notification = document.createElement('div');
+                                notification.className = 'chat-notification';
+                                notification.textContent = unreadCount;
+                                this.element.appendChild(notification);
+                            }
                         } else {
                             this.clearUnreadNotification();
                         }
@@ -1417,7 +1427,7 @@ class Character {
                 // 监听新消息
                 onChildAdded(messagesRef, (snapshot) => {
                     const message = snapshot.val();
-                    // 只有新消息且未读时才显示通知
+                    // 只有新消息且未读时才更新通知
                     if (message.senderId !== sessionUserId && !message.read && 
                         message.timestamp > Date.now() - 1000) {
                         this.showUnreadNotification();
