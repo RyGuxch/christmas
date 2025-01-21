@@ -482,6 +482,11 @@ class Character {
             // 阻止事件冒泡，防止重复触发
             e.stopPropagation();
             
+            // 如果是触摸设备，不在click事件中处理菜单显示
+            if ('ontouchstart' in window) {
+                return;
+            }
+            
             if (this.senderId === sessionUserId) {
                 if (e.button === 2) {
                     e.preventDefault();
@@ -517,36 +522,64 @@ class Character {
         // 添加触摸事件支持
         let touchStartX = 0;
         let touchStartY = 0;
+        let touchStartTime = 0;
         let isDragging = false;
+        let hasMoved = false;
 
         character.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            touchStartX = e.touches[0].clientX - this.position.x;
-            touchStartY = e.touches[0].clientY - this.position.y;
-            isDragging = true;
+            touchStartTime = Date.now();
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+            isDragging = false;
+            hasMoved = false;
+
+            // 保存初始位置用于拖动
+            const rect = character.getBoundingClientRect();
+            this.position = {
+                x: rect.left,
+                y: rect.top
+            };
         });
 
         character.addEventListener('touchmove', (e) => {
-            if (!isDragging) return;
-            e.preventDefault();
-            
-            const x = e.touches[0].clientX - touchStartX;
-            const y = e.touches[0].clientY - touchStartY;
-            
-            // 确保不会超屏幕边界
-            const maxX = window.innerWidth - character.offsetWidth;
-            const maxY = window.innerHeight - character.offsetHeight;
-            
-            this.position = {
-                x: Math.min(Math.max(0, x), maxX),
-                y: Math.min(Math.max(0, y), maxY)
-            };
-            
-            character.style.left = this.position.x + 'px';
-            character.style.top = this.position.y + 'px';
+            const dx = e.touches[0].clientX - touchStartX;
+            const dy = e.touches[0].clientY - touchStartY;
+
+            // 如果移动超过阈值，标记为已移动并开始拖动
+            if (Math.abs(dx) > 5 || Math.abs(dy) > 5) {
+                hasMoved = true;
+                isDragging = true;
+                e.preventDefault(); // 防止页面滚动
+            }
+
+            if (isDragging) {
+                const newX = this.position.x + dx;
+                const newY = this.position.y + dy;
+
+                // 确保不会超出屏幕边界
+                const maxX = window.innerWidth - character.offsetWidth;
+                const maxY = window.innerHeight - character.offsetHeight;
+
+                character.style.left = `${Math.min(Math.max(0, newX), maxX)}px`;
+                character.style.top = `${Math.min(Math.max(0, newY), maxY)}px`;
+            }
         });
 
-        character.addEventListener('touchend', () => {
+        character.addEventListener('touchend', (e) => {
+            const touchDuration = Date.now() - touchStartTime;
+            
+            if (isDragging) {
+                // 如果是拖动结束，保存新位置
+                this.savePosition();
+            } else if (touchDuration < 200 && !hasMoved) {
+                // 如果是短触摸且没有移动，显示菜单
+                if (this.senderId === sessionUserId) {
+                    this.showActionMenu(e, true);
+                } else {
+                    this.showActionMenu(e, false);
+                }
+            }
+
             isDragging = false;
         });
 
@@ -554,7 +587,9 @@ class Character {
         let longPressTimer;
         character.addEventListener('touchstart', (e) => {
             longPressTimer = setTimeout(() => {
-                this.showActionMenu(e);
+                if (!hasMoved && this.senderId === sessionUserId) {
+                    this.showEmojiSelector(e);
+                }
             }, 500);
         });
 
@@ -631,14 +666,55 @@ class Character {
         let isDragging = false;
         let startX, startY;
         let startLeft, startTop;
-        let movedDistance = 0; // 添加移动距离跟踪
+        let movedDistance = 0;
+        let touchStartTime = 0;
+        let isTouchDevice = 'ontouchstart' in window;
+        let currentMoveHandler = null;
+        let currentUpHandler = null;
 
+        // PC端鼠标事件处理
         element.addEventListener('mousedown', (e) => {
-            if (e.button !== 0) return;
-            isDragging = false; // 初始设置为非拖动状态
-            movedDistance = 0; // 重置移动距离
-            startX = e.clientX;
-            startY = e.clientY;
+            if (e.button !== 0 || isTouchDevice) return;
+            handleDragStart(e.clientX, e.clientY);
+
+            currentMoveHandler = (e) => handleDragMove(e.clientX, e.clientY, e);
+            currentUpHandler = () => {
+                handleDragEnd();
+                // PC端特定：确保移除事件监听器
+                document.removeEventListener('mousemove', currentMoveHandler);
+                document.removeEventListener('mouseup', currentUpHandler);
+                currentMoveHandler = null;
+                currentUpHandler = null;
+            };
+
+            document.addEventListener('mousemove', currentMoveHandler);
+            document.addEventListener('mouseup', currentUpHandler);
+        });
+
+        // 移动端触摸事件处理
+        element.addEventListener('touchstart', (e) => {
+            const touch = e.touches[0];
+            touchStartTime = Date.now();
+            handleDragStart(touch.clientX, touch.clientY);
+            e.preventDefault(); // 防止触发鼠标事件
+        });
+
+        element.addEventListener('touchmove', (e) => {
+            const touch = e.touches[0];
+            handleDragMove(touch.clientX, touch.clientY, e);
+        });
+
+        element.addEventListener('touchend', () => {
+            const touchDuration = Date.now() - touchStartTime;
+            handleDragEnd(touchDuration);
+        });
+
+        // 统一的拖动开始处理
+        const handleDragStart = (clientX, clientY) => {
+            isDragging = false;
+            movedDistance = 0;
+            startX = clientX;
+            startY = clientY;
             
             const rect = element.getBoundingClientRect();
             startLeft = rect.left;
@@ -648,59 +724,57 @@ class Character {
             element.style.transition = 'none';
             element.style.animation = 'none';
             element.classList.add('dragging');
+        };
 
-            const moveHandler = (e) => {
-                const dx = e.clientX - startX;
-                const dy = e.clientY - startY;
-                
-                // 计算移动距离
-                movedDistance = Math.sqrt(dx * dx + dy * dy);
-                
-                // 如果移动距离超过阈值，标记为拖动
-                if (movedDistance > 5) {
-                    isDragging = true;
-                }
-                
-                if (!isDragging) return;
-                
-                const newLeft = startLeft + dx;
-                const newTop = startTop + dy;
-                
-                const maxX = window.innerWidth - element.offsetWidth;
-                const maxY = window.innerHeight - element.offsetHeight;
-                
-                const boundedLeft = Math.max(0, Math.min(maxX, newLeft));
-                const boundedTop = Math.max(0, Math.min(maxY, newTop));
-                
-                element.style.left = `${boundedLeft}px`;
-                element.style.top = `${boundedTop}px`;
-                
-                e.preventDefault();
-            };
+        // 统一的拖动过程处理
+        const handleDragMove = (clientX, clientY, event) => {
+            const dx = clientX - startX;
+            const dy = clientY - startY;
+            
+            movedDistance = Math.sqrt(dx * dx + dy * dy);
+            
+            if (movedDistance > (isTouchDevice ? 10 : 5)) {
+                isDragging = true;
+            }
+            
+            if (!isDragging) return;
+            
+            const newLeft = startLeft + dx;
+            const newTop = startTop + dy;
+            
+            const maxX = window.innerWidth - element.offsetWidth;
+            const maxY = window.innerHeight - element.offsetHeight;
+            
+            const boundedLeft = Math.max(0, Math.min(maxX, newLeft));
+            const boundedTop = Math.max(0, Math.min(maxY, newTop));
+            
+            element.style.left = `${boundedLeft}px`;
+            element.style.top = `${boundedTop}px`;
+            
+            event.preventDefault();
+        };
 
-            const upHandler = () => {
-                element.style.cursor = 'grab';
-                element.style.transition = '';
-                element.style.animation = '';
-                element.classList.remove('dragging');
-                
-                // 只有没拖动才显示历史记录
-                if (!isDragging && movedDistance < 5) {
-                    this.showHistory();
-                }
-                
-                // 只有在拖动时才保存位置
-                if (isDragging) {
-                    this.savePosition();
-                }
-                
-                document.removeEventListener('mousemove', moveHandler);
-                document.removeEventListener('mouseup', upHandler);
-            };
-
-            document.addEventListener('mousemove', moveHandler);
-            document.addEventListener('mouseup', upHandler);
-        });
+        // 统一的拖动结束处理
+        const handleDragEnd = (touchDuration = 0) => {
+            element.style.cursor = 'grab';
+            element.style.transition = '';
+            element.style.animation = '';
+            element.classList.remove('dragging');
+            
+            // 移动端：短触摸且几乎没有移动时显示菜单
+            if (isTouchDevice && touchDuration < 200 && movedDistance < 10) {
+                const isCurrentUser = this.senderId === sessionUserId;
+                this.showActionMenu(null, isCurrentUser);
+            }
+            // PC端：没有拖动时显示历史记录
+            else if (!isTouchDevice && !isDragging && movedDistance < 5) {
+                this.showHistory();
+            }
+            
+            if (isDragging) {
+                this.savePosition();
+            }
+        };
 
         element.addEventListener('dragstart', (e) => e.preventDefault());
     }
@@ -1292,65 +1366,85 @@ class Character {
                 <span class="menu-text">${option.text}</span>
             `;
             item.addEventListener('click', (e) => {
-                // 阻止事件冒泡
                 e.stopPropagation();
-                // 先移除菜单
                 menu.remove();
-                // 延迟执行操作，确保菜单已完全关闭
-                setTimeout(() => {
-                    option.action(e);
-                }, 50);
+                setTimeout(() => option.action(e), 50);
             });
+
+            // 移动端添加触摸反馈
+            if ('ontouchstart' in window) {
+                item.addEventListener('touchstart', () => {
+                    item.style.backgroundColor = 'rgba(0, 0, 0, 0.05)';
+                });
+                item.addEventListener('touchend', () => {
+                    item.style.backgroundColor = '';
+                });
+            }
+
             menu.appendChild(item);
         });
 
         // 设置菜单位置
         const rect = this.element.getBoundingClientRect();
         menu.style.position = 'fixed';
-        menu.style.left = `${rect.left}px`;
-        menu.style.top = `${rect.top - menu.offsetHeight - 10}px`;
-
-        // 确保单不会超出屏幕边界
-        const menuRect = menu.getBoundingClientRect();
-        if (menuRect.right > window.innerWidth) {
-            menu.style.left = `${window.innerWidth - menuRect.width - 10}px`;
+        
+        // 判断是否为移动设备
+        const isTouchDevice = 'ontouchstart' in window;
+        if (isTouchDevice) {
+            // 移动端优先显示在角色上方，如果空间不足则显示在下方
+            document.body.appendChild(menu);
+            const menuHeight = menu.offsetHeight;
+            const spaceAbove = rect.top;
+            const spaceBelow = window.innerHeight - rect.bottom;
+            
+            if (spaceAbove >= menuHeight || spaceAbove >= spaceBelow) {
+                menu.style.bottom = `${window.innerHeight - rect.top + 10}px`;
+            } else {
+                menu.style.top = `${rect.bottom + 10}px`;
+            }
+            
+            // 水平居中对齐
+            const menuWidth = menu.offsetWidth;
+            let leftPos = rect.left + (rect.width - menuWidth) / 2;
+            
+            // 确保不超出屏幕边界
+            if (leftPos < 10) leftPos = 10;
+            if (leftPos + menuWidth > window.innerWidth - 10) {
+                leftPos = window.innerWidth - menuWidth - 10;
+            }
+            
+            menu.style.left = `${leftPos}px`;
+        } else {
+            // PC端保持原有逻辑
+            menu.style.left = `${rect.left}px`;
+            menu.style.top = `${rect.top - menu.offsetHeight - 10}px`;
+            document.body.appendChild(menu);
+            
+            // 确保菜单不会超出屏幕边界
+            const menuRect = menu.getBoundingClientRect();
+            if (menuRect.right > window.innerWidth) {
+                menu.style.left = `${window.innerWidth - menuRect.width - 10}px`;
+            }
+            if (menuRect.top < 0) {
+                menu.style.top = `${rect.bottom + 10}px`;
+            }
         }
-        if (menuRect.top < 0) {
-            menu.style.top = `${rect.bottom + 10}px`;
-        }
-
-        // 添加到页面
-        document.body.appendChild(menu);
 
         // 点击其他地方关闭菜单
         const closeMenu = (e) => {
             if (!menu.contains(e.target) && e.target !== this.element) {
                 menu.remove();
                 document.removeEventListener('click', closeMenu);
+                document.removeEventListener('touchstart', closeMenu);
             }
         };
         
         setTimeout(() => {
             document.addEventListener('click', closeMenu);
+            if (isTouchDevice) {
+                document.addEventListener('touchstart', closeMenu);
+            }
         }, 0);
-
-        // 优化移动端菜单位置
-        if ('ontouchstart' in window) {
-            const screenWidth = window.innerWidth;
-            const screenHeight = window.innerHeight;
-            const menuRect = menu.getBoundingClientRect();
-            
-            // 确保菜单不会超出屏幕
-            if (menuRect.right > screenWidth) {
-                menu.style.left = `${screenWidth - menuRect.width - 10}px`;
-            }
-            if (menuRect.top < 0) {
-                menu.style.top = `${rect.bottom + 10}px`;
-            }
-            if (menuRect.bottom > screenHeight) {
-                menu.style.top = `${rect.top - menuRect.height - 10}px`;
-            }
-        }
     }
 
     // 添加标记消息为已读的方法
