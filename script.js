@@ -430,7 +430,28 @@ class Character {
             return existingCharacter;
         }
 
-        // 如果角色不存在，创建新角色并保存到Map中
+        // 同步用户信息到数据库
+        import('https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js')
+            .then(async ({ getDatabase, ref, get, update }) => {
+                try {
+                    const db = getDatabase();
+                    const userRef = ref(db, `users/${senderId}`);
+                    const snapshot = await get(userRef);
+                    
+                    // 如果用户不存在，创建用户记录
+                    if (!snapshot.exists()) {
+                        await update(userRef, {
+                            username: `用户${senderId.slice(0, 6)}`,
+                            online: true,
+                            lastActive: Date.now()
+                        });
+                    }
+                } catch (error) {
+                    console.error('同步用户信息失败:', error);
+                }
+            });
+
+        // 创建新角色并保存到Map中
         const character = new Character(message, senderId);
         Character.characters.set(senderId, character);
         return character;
@@ -1796,7 +1817,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 }); 
 
-// 添加移动��手势支持
+// 添加移动端手势支持
 document.addEventListener('DOMContentLoaded', () => {
     let touchStartY = 0;
     let touchStartTime = 0;
@@ -2420,5 +2441,231 @@ document.head.appendChild(crazyStyles);
 
 // 初始化
 document.addEventListener('DOMContentLoaded', () => {
+    startCharacterChasing();
+}); 
+
+// 添加用户名管理
+let currentUsername = localStorage.getItem('username') || '';
+
+// 初始化用户名设置
+function initializeUsernameSystem() {
+    const usernameModal = document.querySelector('.username-modal');
+    const setUsernameBtn = document.querySelector('.set-username');
+    const closeModalBtn = usernameModal.querySelector('.close-modal');
+    const saveUsernameBtn = document.getElementById('saveUsername');
+    const usernameInput = document.getElementById('usernameInput');
+    const errorMessage = usernameModal.querySelector('.error-message');
+    const currentUsernameDisplay = document.querySelector('.current-username');
+
+    // 更新显示的用户名
+    function updateUsernameDisplay() {
+        currentUsernameDisplay.textContent = currentUsername || '未设置用户名';
+        // 同步到 Firebase
+        if (currentUsername) {
+            const userRef = ref(db, `users/${sessionUserId}`);
+            update(userRef, {
+                username: currentUsername,
+                lastActive: Date.now()
+            });
+        }
+    }
+
+    // 显示用户名设置模态框
+    function showUsernameModal() {
+        usernameModal.style.display = 'flex';
+        usernameInput.value = currentUsername;
+        errorMessage.style.display = 'none';
+    }
+
+    // 保存用户名
+    async function saveUsername() {
+        const username = usernameInput.value.trim();
+        if (!username) {
+            errorMessage.textContent = '用户名不能为空';
+            errorMessage.style.display = 'block';
+            return;
+        }
+
+        try {
+            // 导入所需的 Firebase 函数
+            const { getDatabase, ref, get, update } = await import('https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js');
+            const { getAuth } = await import('https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js');
+            
+            const auth = getAuth();
+            if (!auth.currentUser) {
+                throw new Error('用户未登录');
+            }
+
+            const db = getDatabase();
+            const usersRef = ref(db, 'users');
+            const snapshot = await get(usersRef);
+            const users = snapshot.val() || {};
+            
+            // 检查用户名是否已被使用
+            const isUsernameTaken = Object.entries(users).some(
+                ([uid, user]) => user.username === username && uid !== auth.currentUser.uid
+            );
+
+            if (isUsernameTaken) {
+                errorMessage.textContent = '该用户名已被使用';
+                errorMessage.style.display = 'block';
+                return;
+            }
+
+            // 更新用户信息
+            const userRef = ref(db, `users/${auth.currentUser.uid}`);
+            await update(userRef, {
+                username: username,
+                lastActive: Date.now()
+            });
+
+            // 更新本地存储
+            localStorage.setItem('username', username);
+            currentUsername = username;
+            updateUsernameDisplay();
+            
+            // 关闭模态框
+            usernameModal.style.display = 'none';
+            
+            // 刷新用户列表
+            loadUsersList();
+        } catch (error) {
+            console.error('保存用户名失败:', error);
+            errorMessage.textContent = '保存失败，请重试';
+            errorMessage.style.display = 'block';
+        }
+    }
+
+    setUsernameBtn.addEventListener('click', showUsernameModal);
+    closeModalBtn.addEventListener('click', () => usernameModal.style.display = 'none');
+    saveUsernameBtn.addEventListener('click', saveUsername);
+
+    // 初始化时更新显示
+    updateUsernameDisplay();
+}
+
+// 消息列表视图管理
+function initializeMessageListView() {
+    const christmasTree = document.querySelector('.christmas-tree');
+    const messageListView = document.querySelector('.message-list-view');
+    const backToTreeBtn = document.querySelector('.back-to-tree');
+    const usersList = document.querySelector('.users-list');
+
+    // 加载用户列表
+    async function loadUsersList() {
+        try {
+            // 导入所需的 Firebase 函数
+            const { getDatabase, ref, get } = await import('https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js');
+            const { getAuth, signInAnonymously } = await import('https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js');
+            
+            // 确保用户已认证
+            const auth = getAuth();
+            if (!auth.currentUser) {
+                await signInAnonymously(auth);
+            }
+            
+            const db = getDatabase();
+            const usersRef = ref(db, 'users');
+            const snapshot = await get(usersRef);
+            
+            usersList.innerHTML = '';
+            
+            if (snapshot.exists()) {
+                const users = snapshot.val();
+                
+                Object.entries(users).forEach(([userId, user]) => {
+                    if (userId !== sessionUserId && user.username) {
+                        const userElement = document.createElement('div');
+                        userElement.className = 'user-item';
+                        userElement.innerHTML = `
+                            <div class="user-avatar">${user.username[0]}</div>
+                            <div class="user-details">
+                                <div class="user-name">${user.username}</div>
+                                <div class="last-message">点击开始聊天</div>
+                            </div>
+                        `;
+                        
+                        // 点击用户项打开私聊
+                        userElement.addEventListener('click', () => {
+                            const character = Character.characters.get(userId);
+                            if (character) {
+                                character.openPrivateChat();
+                                hideMessageList();
+                            } else {
+                                console.log('未找到对应的角色:', userId);
+                            }
+                        });
+                        
+                        usersList.appendChild(userElement);
+                    }
+                });
+            } else {
+                usersList.innerHTML = '<div class="no-users">暂无其他用户</div>';
+            }
+        } catch (error) {
+            console.error('加载用户列表失败:', error);
+            usersList.innerHTML = '<div class="error-message">加载用户列表失败，请重试</div>';
+        }
+    }
+
+    // 返回圣诞树视图
+    function hideMessageList() {
+        messageListView.style.display = 'none';
+    }
+
+    // 显示消息列表视图
+    function showMessageList() {
+        messageListView.style.display = 'flex';
+        loadUsersList();
+    }
+
+    // 设置事件监听器
+    backToTreeBtn.addEventListener('click', hideMessageList);
+    christmasTree.addEventListener('click', showMessageList);
+
+    // 监听用户在线状态变化
+    async function setupUserPresence() {
+        try {
+            const { getDatabase, ref, onValue, update, onDisconnect } = await import('https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js');
+            const { getAuth, signInAnonymously } = await import('https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js');
+            
+            // 确保用户已认证
+            const auth = getAuth();
+            if (!auth.currentUser) {
+                await signInAnonymously(auth);
+            }
+            
+            const db = getDatabase();
+            const userRef = ref(db, `users/${auth.currentUser.uid}`);
+            
+            // 用户上线
+            onValue(ref(db, '.info/connected'), (snapshot) => {
+                if (snapshot.val() === true) {
+                    // 用户连接时更新状态
+                    update(userRef, {
+                        online: true,
+                        lastActive: Date.now()
+                    });
+
+                    // 用户断开连接时更新状态
+                    onDisconnect(userRef).update({
+                        online: false,
+                        lastActive: Date.now()
+                    });
+                }
+            });
+        } catch (error) {
+            console.error('设置用户在线状态失败:', error);
+        }
+    }
+
+    // 设置用户在线状态监听
+    setupUserPresence();
+}
+
+// 在初始化时调用
+document.addEventListener('DOMContentLoaded', () => {
+    initializeUsernameSystem();
+    initializeMessageListView();
     startCharacterChasing();
 }); 

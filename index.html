@@ -220,6 +220,36 @@
         </div>
         
         <div class="character-container"></div>
+
+        <!-- 添加用户名设置模态框 -->
+        <div class="username-modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>设置用户名</h3>
+                    <button class="close-modal">×</button>
+                </div>
+                <div class="modal-body">
+                    <input type="text" id="usernameInput" placeholder="请输入你的用户名" maxlength="20">
+                    <p class="error-message" style="display: none;"></p>
+                    <button id="saveUsername">保存</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 添加消息列表界面 -->
+        <div class="message-list-view" style="display: none;">
+            <div class="message-list-header">
+                <button class="back-to-tree">返回</button>
+                <h2>消息列表</h2>
+                <button class="set-username">设置用户名</button>
+            </div>
+            <div class="user-info">
+                <span class="current-username">未设置用户名</span>
+            </div>
+            <div class="users-list">
+                <!-- 用户列表将动态加载 -->
+            </div>
+        </div>
     </div>
 
     <!-- 先加载本地脚本 -->
@@ -594,7 +624,7 @@
 
         // 修改切换标签函数
         window.switchTab = (tabId) => {
-            // 隐���所有标签内容
+            // 隐藏所有标签内容
             document.querySelectorAll('.tab-content').forEach(content => {
                 content.style.display = 'none';
             });
@@ -660,6 +690,105 @@
 
         // 调整创建频率
         setInterval(createSnowflake, 300);
+
+        // 添加用户名设置相关功能
+        const usernameModal = document.querySelector('.username-modal');
+        const usernameInput = document.getElementById('usernameInput');
+        const saveUsernameBtn = document.getElementById('saveUsername');
+        const errorMessage = document.querySelector('.error-message');
+        const currentUsernameSpan = document.querySelector('.current-username');
+
+        // 显示用户名设置模态框
+        document.querySelector('.set-username').addEventListener('click', () => {
+            usernameModal.style.display = 'flex';
+            const currentUsername = localStorage.getItem('christmasUsername');
+            if (currentUsername) {
+                usernameInput.value = currentUsername;
+            }
+        });
+
+        // 关闭用户名设置模态框
+        document.querySelector('.username-modal .close-modal').addEventListener('click', () => {
+            usernameModal.style.display = 'none';
+            errorMessage.style.display = 'none';
+        });
+
+        // 保存用户名
+        saveUsernameBtn.addEventListener('click', async () => {
+            const username = usernameInput.value.trim();
+            if (!username) {
+                errorMessage.textContent = '用户名不能为空';
+                errorMessage.style.display = 'block';
+                return;
+            }
+
+            try {
+                // 保存到 localStorage
+                localStorage.setItem('christmasUsername', username);
+                
+                // 更新显示
+                currentUsernameSpan.textContent = username;
+                
+                // 关闭模态框
+                usernameModal.style.display = 'none';
+                errorMessage.style.display = 'none';
+                
+                // 提示成功
+                alert('用户名设置成功！');
+            } catch (error) {
+                console.error('保存用户名失败:', error);
+                errorMessage.textContent = '保存失败，请重试';
+                errorMessage.style.display = 'block';
+            }
+        });
+
+        // 初始化用户名显示
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedUsername = localStorage.getItem('christmasUsername');
+            if (savedUsername) {
+                currentUsernameSpan.textContent = savedUsername;
+            }
+        });
+
+        // 音乐播放相关功能
+        const bgMusic = document.getElementById('bgMusic');
+        const musicToggle = document.getElementById('musicToggle');
+        let hasUserInteracted = false;
+
+        // 监听用户交互
+        document.addEventListener('click', () => {
+            hasUserInteracted = true;
+        }, { once: true });
+
+        // 音乐控制
+        musicToggle.addEventListener('click', async () => {
+            try {
+                if (bgMusic.paused) {
+                    if (!hasUserInteracted) {
+                        alert('请先点击页面任意位置以启用音乐播放');
+                        return;
+                    }
+                    await bgMusic.play();
+                    musicToggle.classList.add('playing');
+                } else {
+                    bgMusic.pause();
+                    musicToggle.classList.remove('playing');
+                }
+            } catch (error) {
+                console.error('音乐播放失败:', error);
+                alert('音乐播放失败，请重试');
+            }
+        });
+
+        // 确保音频加载完成
+        bgMusic.addEventListener('canplaythrough', () => {
+            console.log('音乐加载完成');
+        });
+
+        // 音频错误处理
+        bgMusic.addEventListener('error', (e) => {
+            console.error('音频加载失败:', e);
+        });
     </script>
 
     <!-- 添加音乐管理样式 -->
