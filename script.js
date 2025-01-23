@@ -430,28 +430,7 @@ class Character {
             return existingCharacter;
         }
 
-        // 同步用户信息到数据库
-        import('https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js')
-            .then(async ({ getDatabase, ref, get, update }) => {
-                try {
-                    const db = getDatabase();
-                    const userRef = ref(db, `users/${senderId}`);
-                    const snapshot = await get(userRef);
-                    
-                    // 如果用户不存在，创建用户记录
-                    if (!snapshot.exists()) {
-                        await update(userRef, {
-                            username: `用户${senderId.slice(0, 6)}`,
-                            online: true,
-                            lastActive: Date.now()
-                        });
-                    }
-                } catch (error) {
-                    console.error('同步用户信息失败:', error);
-                }
-            });
-
-        // 创建新角色并保存到Map中
+        // 如果角色不存在，创建新角色并保存到Map中
         const character = new Character(message, senderId);
         Character.characters.set(senderId, character);
         return character;
@@ -1074,7 +1053,7 @@ class Character {
             const { getAuth, signInAnonymously } = await import('https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js');
             const auth = getAuth();
             
-            // 如果用户未登录，进行匿名登录
+            // 如果用户未登录，行匿名登录
             if (!auth.currentUser) {
                 await signInAnonymously(auth);
             }
@@ -1113,25 +1092,7 @@ class Character {
             requestAnimationFrame(() => {
                 messagesContainer.scrollTop = messagesContainer.scrollHeight;
             });
-
-            // 修改关闭按钮处理
-            const closeBtn = modal.querySelector('.close-modal');
-            closeBtn.onclick = () => {
-                modal.style.display = 'none';
-                // 移除消息监听器
-                if (this.privateMessageListener) {
-                    this.privateMessageListener();
-                    this.privateMessageListener = null;
-                }
-                // 返回用户列表
-                const messageListView = document.querySelector('.message-list-view');
-                if (messageListView) {
-                    messageListView.style.display = 'flex';
-                    // 刷新用户列表
-                    loadUsersList();
-                }
-            };
-
+            
             // 修改发送消息处理
             const sendMessage = async () => {
                 const text = input.value.trim();
@@ -1162,6 +1123,30 @@ class Character {
                     sendMessage();
                 }
             };
+            
+            // 关闭按钮处理
+            const closeBtn = modal.querySelector('.close-modal');
+            closeBtn.onclick = () => {
+                modal.style.display = 'none';
+                // 移除消息监听器
+                if (this.privateMessageListener) {
+                    this.privateMessageListener();
+                    this.privateMessageListener = null;
+                }
+            };
+
+            // 点击模态框外部关闭
+            modal.onclick = (e) => {
+                if (e.target === modal) {
+                    closeBtn.click();
+                }
+            };
+
+            // 打开私聊窗口时清除未读提示
+            this.clearUnreadNotification();
+
+            // 设置消息为读
+            await this.markMessagesAsRead();
         } catch (error) {
             console.error('打开私聊失败:', error);
             alert('打开私聊失败，请重试');
@@ -1811,7 +1796,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 }); 
 
-// 添加移动端手势支持
+// 添加移动��手势支持
 document.addEventListener('DOMContentLoaded', () => {
     let touchStartY = 0;
     let touchStartTime = 0;
@@ -2436,80 +2421,4 @@ document.head.appendChild(crazyStyles);
 // 初始化
 document.addEventListener('DOMContentLoaded', () => {
     startCharacterChasing();
-}); 
-
-// 全局用户列表加载函数
-async function loadUsersList() {
-    try {
-        // 导入所需的 Firebase 函数
-        const { getDatabase, ref, get } = await import('https://www.gstatic.com/firebasejs/11.1.0/firebase-database.js');
-        const { getAuth, signInAnonymously } = await import('https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js');
-        
-        // 确保用户已认证
-        const auth = getAuth();
-        if (!auth.currentUser) {
-            await signInAnonymously(auth);
-        }
-        
-        const db = getDatabase();
-        const usersRef = ref(db, 'users');
-        const snapshot = await get(usersRef);
-        const usersList = document.querySelector('.users-list');
-        
-        if (!usersList) {
-            console.error('找不到用户列表容器');
-            return;
-        }
-        
-        usersList.innerHTML = '';
-        
-        if (snapshot.exists()) {
-            const users = snapshot.val();
-            
-            Object.entries(users).forEach(([userId, user]) => {
-                if (userId !== sessionUserId && user.username) {
-                    const userElement = document.createElement('div');
-                    userElement.className = 'user-item';
-                    userElement.innerHTML = `
-                        <div class="user-avatar">${user.username[0]}</div>
-                        <div class="user-details">
-                            <div class="user-name">${user.username}</div>
-                            <div class="last-message">点击开始聊天</div>
-                        </div>
-                    `;
-                    
-                    // 点击用户项打开私聊
-                    userElement.addEventListener('click', () => {
-                        const character = Character.characters.get(userId);
-                        if (character) {
-                            character.openPrivateChat();
-                            hideMessageList();
-                        } else {
-                            console.log('未找到对应的角色:', userId);
-                        }
-                    });
-                        
-                    usersList.appendChild(userElement);
-                }
-            });
-        } else {
-            usersList.innerHTML = '<div class="no-users">暂无其他用户</div>';
-        }
-    } catch (error) {
-        console.error('加载用户列表失败:', error);
-        usersList.innerHTML = '<div class="error-message">加载用户列表失败，请重试</div>';
-    }
-}
-
-// 修改圣诞树点击事件
-document.addEventListener('DOMContentLoaded', () => {
-    const christmasTree = document.querySelector('.christmas-tree');
-    const messageListView = document.querySelector('.message-list-view');
-    
-    if (christmasTree && messageListView) {
-        christmasTree.addEventListener('click', () => {
-            messageListView.style.display = 'flex';
-            loadUsersList();
-        });
-    }
 }); 

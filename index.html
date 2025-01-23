@@ -594,7 +594,7 @@
 
         // 修改切换标签函数
         window.switchTab = (tabId) => {
-            // 隐藏所有标签内容
+            // 隐���所有标签内容
             document.querySelectorAll('.tab-content').forEach(content => {
                 content.style.display = 'none';
             });
@@ -660,46 +660,198 @@
 
         // 调整创建频率
         setInterval(createSnowflake, 300);
-
-        // 音乐播放相关功能
-        const bgMusic = document.getElementById('bgMusic');
-        const musicToggle = document.getElementById('musicToggle');
-        let hasUserInteracted = false;
-
-        // 监听用户交互
-        document.addEventListener('click', () => {
-            hasUserInteracted = true;
-        }, { once: true });
-
-        // 音乐控制
-        musicToggle.addEventListener('click', async () => {
-            try {
-                if (bgMusic.paused) {
-                    if (!hasUserInteracted) {
-                        alert('请先点击页面任意位置以启用音乐播放');
-                        return;
-                    }
-                    await bgMusic.play();
-                    musicToggle.classList.add('playing');
-                } else {
-                    bgMusic.pause();
-                    musicToggle.classList.remove('playing');
-                }
-            } catch (error) {
-                console.error('音乐播放失败:', error);
-                alert('音乐播放失败，请重试');
-            }
-        });
-
-        // 确保音频加载完成
-        bgMusic.addEventListener('canplaythrough', () => {
-            console.log('音乐加载完成');
-        });
-
-        // 音频错误处理
-        bgMusic.addEventListener('error', (e) => {
-            console.error('音频加载失败:', e);
-        });
     </script>
+
+    <!-- 添加音乐管理样式 -->
+    <style>
+        .admin-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        .tab-btn {
+            padding: 8px 16px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn.active {
+            opacity: 1;
+            border-bottom: 2px solid #000;
+        }
+
+        .music-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .music-info {
+            flex: 1;
+        }
+
+        .music-name {
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .music-meta {
+            font-size: 12px;
+            color: #666;
+        }
+
+        /* 帖子管理样式 */
+        .forum-controls {
+            padding: 16px;
+        }
+
+        .forum-stats {
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #eee;
+            color: #666;
+        }
+
+        .forum-list {
+            max-height: 400px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .forum-item {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 16px;
+            position: relative;
+            transition: all 0.2s ease;
+        }
+
+        .forum-item:hover {
+            background: #f0f1f2;
+        }
+
+        .forum-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .forum-author {
+            font-weight: 500;
+            color: #333;
+        }
+
+        .forum-time {
+            font-size: 12px;
+            color: #666;
+        }
+
+        .forum-content {
+            color: #444;
+            margin-bottom: 12px;
+            line-height: 1.5;
+            word-break: break-word;
+        }
+
+        .forum-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .delete-post-btn {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s ease;
+        }
+
+        .delete-post-btn:hover {
+            background: #b91c1c;
+        }
+
+        .character-container {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 120px;
+            z-index: 10;
+            pointer-events: none;
+            overflow: visible;
+        }
+
+        .character {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            font-size: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: left 0.5s ease;
+            pointer-events: auto;
+            z-index: 1000;
+            bottom: 20px;
+        }
+
+        .character.jump {
+            animation: jump 0.5s ease;
+        }
+
+        @keyframes jump {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-30px); }
+        }
+
+        .message-bubble {
+            position: absolute;
+            top: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.9);
+            padding: 8px 12px;
+            border-radius: 12px;
+            font-size: 14px;
+            white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            opacity: 1;
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
+    </style>
+
+    <!-- 在 body 标签内，其他模态框后面添加 -->
+    <div class="private-chat-modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>私聊消息</h3>
+                <div class="chat-with"></div>
+                <button class="close-modal">×</button>
+            </div>
+            <div class="chat-messages"></div>
+            <div class="chat-input-container">
+                <input type="text" class="chat-input" placeholder="输入消息..." maxlength="100">
+                <button class="send-chat">发送</button>
+            </div>
+        </div>
+    </div>
 </body>
 </html> 
